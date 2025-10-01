@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-26 18:57:30.118349",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "label": "Hash",
+   "description": "External unique identifier"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Data",
+   "label": "Type",
+   "description": "deposit / refund / etc"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "info_1",
+   "fieldtype": "Data",
+   "label": "Info 1"
+  },
+  {
+   "fieldname": "info_2",
+   "fieldtype": "Data",
+   "label": "Info 2"
+  },
+  {
+   "fieldname": "info_3",
+   "fieldtype": "Data",
+   "label": "Info 3"
+  },
+  {
+   "fieldname": "number",
+   "fieldtype": "Data",
+   "label": "Transaction Number",
+   "description": "External transaction id"
+  },
+  {
+   "fieldname": "provider",
+   "fieldtype": "Data",
+   "label": "Provider",
+   "description": "Paypal / Stripe etc"
+  },
+  {
+   "fieldname": "payment_at",
+   "fieldtype": "Datetime",
+   "label": "Payment At"
+  },
+  {
+   "fieldname": "donation",
+   "fieldtype": "Link",
+   "label": "Donation",
+   "options": "Donation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "created_from_payload",
+   "fieldtype": "Check",
+   "label": "Created From Payload"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-26 18:57:30.118349",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Donation Payment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

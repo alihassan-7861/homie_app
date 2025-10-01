@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-26 18:41:03.139030",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "hash",
+  "donation_number",
+  "email",
+  "first_name",
+  "last_name",
+  "is_anonymous",
+  "donated_at",
+  "total",
+  "currency",
+  "wishlist",
+  "source",
+  "company",
+  "ip_address",
+  "user_agent",
+  "is_subscription",
+  "items"
+ ],
+ "fields": [
+  {
+   "description": "External hash/uuid",
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "label": "Hash",
+   "unique": 1
+  },
+  {
+   "fieldname": "donation_number",
+   "fieldtype": "Data",
+   "label": "Donation Number"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_anonymous",
+   "fieldtype": "Check",
+   "label": "Is Anonymous"
+  },
+  {
+   "fieldname": "donated_at",
+   "fieldtype": "Datetime",
+   "label": "Donated At"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency"
+  },
+  {
+   "fieldname": "wishlist",
+   "fieldtype": "Data",
+   "label": "Wishlist"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address"
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Text",
+   "label": "User Agent"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_subscription",
+   "fieldtype": "Check",
+   "label": "Is Subscription"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Donation Item"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-29 19:23:15.256918",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Donation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
