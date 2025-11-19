@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:iban_no",
+ "creation": "2025-11-17 05:44:06.947183",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "iban_no",
+  "bank_name",
+  "account_title",
+  "link_field"
+ ],
+ "fields": [
+  {
+   "fieldname": "iban_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Iban",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name"
+  },
+  {
+   "fieldname": "account_title",
+   "fieldtype": "Data",
+   "label": "Account Title"
+  },
+  {
+   "fieldname": "link_field",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Association",
+   "options": "Association Information",
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-17 05:57:36.780999",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Bank Details",
+ "name_case": "Title Case",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

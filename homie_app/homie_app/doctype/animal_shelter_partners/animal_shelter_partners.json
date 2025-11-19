@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:shelter_name",
+ "creation": "2025-11-15 07:10:32.386956",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "shelter_name",
+  "country_name",
+  "deleivery_address",
+  "contact_person",
+  "forklift",
+  "truck_access"
+ ],
+ "fields": [
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Shelter Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "country_name",
+   "fieldtype": "Data",
+   "label": "Country Name"
+  },
+  {
+   "fieldname": "deleivery_address",
+   "fieldtype": "Data",
+   "label": "Delievery Address"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person Name"
+  },
+  {
+   "default": "0",
+   "fieldname": "forklift",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Forklift",
+   "reqd": 1
+  },
+  {
+   "fieldname": "truck_access",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Truck Access",
+   "options": "Yes\nNo",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-15 07:19:11.568411",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Animal Shelter Partners",
+ "name_case": "Title Case",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -5,6 +5,11 @@ from frappe import _
 from frappe.utils import get_datetime
 
 
+import re
+import frappe
+import json
+from frappe.utils import get_datetime
+
 def _parse_request_json():
     """Parse JSON body and merge with query params (form_dict)."""
     data = {}
@@ -24,15 +29,64 @@ def normalize_bool(val):
     return 0
 
 
+def validate_payload(payload):
+    """Custom validation rules for donation payload"""
 
-    
-@frappe.whitelist(allow_guest=True)   # allow_guest=True lets you call without login
+    # 1. Validate hash (must be 32 or 33 chars, only alphanumeric)
+    hash_val = payload.get("hash")
+    if not hash_val or not re.fullmatch(r"[A-Za-z0-9]{32,33}", hash_val):
+        frappe.throw("Invalid 'hash'. Must be 32 or 33 characters, only numbers and letters.")
+
+    # 2. Validate donation_number (optional, but no special chars except dash/underscore)
+    if payload.get("donation_number") and not re.fullmatch(r"[A-Za-z0-9\-_]+", payload["donation_number"]):
+        frappe.throw("Invalid 'donation_number'. Only letters, numbers, dashes and underscores allowed.")
+
+    # 3. Validate email (basic pattern)
+    if payload.get("email") and not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", payload["email"]):
+        frappe.throw("Invalid 'email' format.")
+
+    # 4. Validate items (each item must follow rules)
+    for idx, it in enumerate(payload.get("items", []), start=1):
+        # quantity must be integer > 0
+        qty = it.get("quantity", 0)
+        if not isinstance(qty, int) or qty <= 0:
+            frappe.throw(f"Invalid quantity in item {idx}. Must be a positive integer.")
+
+        # total must be positive float or int
+        total = it.get("total", 0)
+        if not isinstance(total, (int, float)) or total <= 0:
+            frappe.throw(f"Invalid total in item {idx}. Must be a positive number.")
+
+        # wishlist_item must be alphanumeric (UUID-style check here)
+        wishlist_item = it.get("wishlist_item")
+        if not wishlist_item or not re.fullmatch(r"[A-Za-z0-9\-]+", wishlist_item):
+            frappe.throw(f"Invalid wishlist_item in item {idx}. Only letters, numbers, and dashes allowed.")
+
+    # 5. Validate wishlist field itself (same as wishlist_item, if present)
+    if payload.get("wishlist") and not re.fullmatch(r"[A-Za-z0-9\-]+", payload["wishlist"]):
+        frappe.throw("Invalid 'wishlist'. Only letters, numbers, and dashes allowed.")
+
+    # 6. Validate currency (3-letter code like USD, EUR, PKR)
+    if payload.get("currency") and not re.fullmatch(r"[A-Z]{3}", payload["currency"]):
+        frappe.throw("Invalid 'currency'. Must be a 3-letter code (e.g., USD, EUR, PKR).")
+
+    # 7. Validate names (first and last name, only letters allowed)
+    if payload.get("first_name") and not re.fullmatch(r"[A-Za-z]+", payload["first_name"]):
+        frappe.throw("Invalid 'first_name'. Only alphabets allowed.")
+    if payload.get("last_name") and not re.fullmatch(r"[A-Za-z]+", payload["last_name"]):
+        frappe.throw("Invalid 'last_name'. Only alphabets allowed.")
+
+
+@frappe.whitelist(allow_guest=True)
 def create_donation():
     """
     Create a Donation and child Donation Items.
     Idempotency: if a Donation with same 'hash' or 'donation_number' exists, returns it (no duplicate).
     """
     payload = _parse_request_json()
+
+    # ✅ Apply validation before inserting
+    validate_payload(payload)
 
     # idempotency check
     existing = None
@@ -52,8 +106,8 @@ def create_donation():
         items.append({
             "doctype": "Donation Item",
             "wishlist_item": it.get("wishlist_item"),
-            "quantity": it.get("quantity") or 1,
-            "total": it.get("total") or 0
+            "quantity": it.get("quantity"),
+            "total": it.get("total")
         })
 
     doc = frappe.get_doc({
@@ -73,7 +127,7 @@ def create_donation():
         "ip_address": payload.get("ip_address"),
         "user_agent": payload.get("user_agent"),
         "is_subscription": normalize_bool(payload.get("is_subscription")),
-        "items": payload.get("items", []),
+        "items": items,
     })
 
     doc.insert(ignore_permissions=True)
@@ -82,16 +136,59 @@ def create_donation():
 
 
 
-@frappe.whitelist(allow_guest=True)   # allow_guest=True lets you call without login
+
+@frappe.whitelist(allow_guest=True)
 def create_payment():
     """
     Create a Donation Payment and link to Donation if possible.
     Idempotency: if 'number' (transaction id) or 'hash' already exists, returns existing.
     Accepts optional donation reference: donation_hash OR donation_number.
     """
-    payload = _parse_request_json()
+    payload = frappe.local.form_dict  # works for JSON or query params
 
-    # idempotency - avoid duplicate payments by 'number' OR 'hash'
+    # -------------------------
+    # 🔹 VALIDATIONS
+    # -------------------------
+    required_fields = ["hash", "type", "amount", "number", "provider"]
+    errors = {}
+
+    # required fields check
+    for field in required_fields:
+        if not payload.get(field):
+            errors[field] = f"{field} is required"
+
+    # amount must be positive
+    if payload.get("amount"):
+        try:
+            amount_val = float(payload.get("amount"))
+            if amount_val <= 0:
+                errors["amount"] = "Amount must be greater than 0"
+        except ValueError:
+            errors["amount"] = "Amount must be a valid number"
+
+    # type validation (must be deposit / withdraw / refund)
+    valid_types = ["deposit", "withdraw", "refund"]
+    if payload.get("type") and payload.get("type").lower() not in valid_types:
+        errors["type"] = f"Invalid type. Must be one of {valid_types}"
+
+    # provider validation (paypal, stripe, bank, etc.)
+    valid_providers = ["paypal", "stripe", "bank", "cash"]
+    if payload.get("provider") and payload.get("provider").lower() not in valid_providers:
+        errors["provider"] = f"Invalid provider. Must be one of {valid_providers}"
+
+    # datetime format validation
+    if payload.get("payment_at"):
+        try:
+            get_datetime(payload.get("payment_at"))
+        except Exception:
+            errors["payment_at"] = "Invalid datetime format. Use ISO8601 e.g. 2025-07-20T00:00:00+00:01"
+
+    if errors:
+        return {"status": "error", "errors": errors}
+
+    # -------------------------
+    # 🔹 Idempotency check
+    # -------------------------
     existing = None
     if payload.get("number"):
         existing = frappe.db.get_value("Donation Payment", {"number": payload.get("number")}, "name")
@@ -102,7 +199,9 @@ def create_payment():
         doc = frappe.get_doc("Donation Payment", existing)
         return {"status": "exists", "payment": doc.as_dict()}
 
-    # try linking to donation
+    # -------------------------
+    # 🔹 Try linking to Donation
+    # -------------------------
     donation_name = None
     if payload.get("donation_hash"):
         res = frappe.get_all("Donation", filters={"hash": payload.get("donation_hash")}, fields=["name"], limit=1)
@@ -113,11 +212,14 @@ def create_payment():
         if res:
             donation_name = res[0].name
 
+    # -------------------------
+    # 🔹 Create Donation Payment
+    # -------------------------
     payment_doc = frappe.get_doc({
         "doctype": "Donation Payment",
         "hash": payload.get("hash"),
         "type": payload.get("type"),
-        "amount": payload.get("amount") or 0,
+        "amount": float(payload.get("amount")) if payload.get("amount") else 0,
         "info_1": payload.get("info_1"),
         "info_2": payload.get("info_2"),
         "info_3": payload.get("info_3"),
@@ -132,3 +234,263 @@ def create_payment():
     frappe.db.commit()
 
     return {"status": "ok", "payment": payment_doc.as_dict()}
+
+
+
+import frappe
+import json
+import re
+from frappe.utils import validate_phone_number
+
+def _req():
+    """Helper: parse JSON body or form dict"""
+    try:
+        if frappe.request.data:
+            return json.loads(frappe.request.data)
+    except:
+        pass
+    return frappe.form_dict
+
+def parse_phone(phone):
+    if isinstance(phone, dict):
+        # maybe the number is in a key inside the dict
+        phone = phone.get("number") or phone.get("contact_no") or ""
+    if phone:
+        return str(phone).replace("-", " ").strip()
+    return ""
+
+# -----------------------------
+# CREATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def create_association():
+    data = _req()
+
+    required = ["association_name", "email", "contact_no", "iban_no"]
+    for f in required:
+        if not data.get(f):
+            frappe.throw(f"'{f}' is required.")
+
+    # Email validation
+    if not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", data.get("email")):
+        frappe.throw("Invalid email format.")
+
+    # Normalize phone
+    data["contact_no"] = parse_phone(data.get("contact_no"))
+
+    # Check if association exists by email
+    assoc_name = frappe.db.get_value(
+        "Association Information",
+        {"email": data.get("email")},
+        "name"
+    )
+
+    if assoc_name:
+        assoc_doc = frappe.get_doc("Association Information", assoc_name)
+    else:
+        assoc_doc = frappe.get_doc({
+            "doctype": "Association Information",
+            "association_name": data.get("association_name"),
+            "association_address": data.get("association_address"),
+            "email": data.get("email"),
+            "contact_no": data.get("contact_no"),
+        })
+        assoc_doc.insert(ignore_permissions=True)
+
+    # Bank details
+    iban_doc_name = frappe.db.get_value(
+        "Bank Details",
+        {"iban_no": data.get("iban_no")},
+        "name"
+    )
+
+    if iban_doc_name:
+        iban_doc = frappe.get_doc("Bank Details", iban_doc_name)
+    else:
+        iban_doc = frappe.get_doc({
+            "doctype": "Bank Details",
+            "iban_no": data.get("iban_no"),
+            "bank_name": data.get("bank_name"),
+            "account_title": data.get("account_title"),
+            "link_field": assoc_doc.name,
+        })
+        iban_doc.insert(ignore_permissions=True)
+
+    assoc_doc.bank_details = iban_doc.name
+    assoc_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "association": assoc_doc.as_dict(),
+        "bank_details": iban_doc.as_dict(),
+    }
+
+# -----------------------------
+# READ
+# -----------------------------
+# -----------------------------
+# GET ALL ASSOCIATIONS
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_all_associations():
+    """
+    Fetch all associations with their linked bank details.
+    """
+    associations = frappe.get_all(
+        "Association Information",
+        fields=["name", "association_name", "association_address", "email", "contact_no", "bank_details"],
+        order_by="modified desc"
+    )
+
+    result = []
+    for assoc in associations:
+        assoc_doc = frappe.get_doc("Association Information", assoc["name"])
+        bank_doc = None
+        if assoc_doc.bank_details:
+            bank_doc = frappe.get_doc("Bank Details", assoc_doc.bank_details)
+        result.append({
+            "association": assoc_doc.as_dict(),
+            "bank_details": bank_doc.as_dict() if bank_doc else None
+        })
+
+    return {
+        "status": "success",
+        "associations": result
+    }
+
+# -----------------------------
+# GET SPECIFIC ASSOCIATION
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_association(name=None, email=None):
+    """
+    Get association by name or email.
+    """
+    if not name and not email:
+        frappe.throw("'name' or 'email' is required to fetch the association.")
+
+    filters = {}
+    if name:
+        filters["name"] = name
+    if email:
+        filters["email"] = email
+
+    assoc_list = frappe.get_all(
+        "Association Information",
+        filters=filters,
+        fields=["name"],
+        limit=1
+    )
+
+    if not assoc_list:
+        frappe.throw("Association not found.")
+
+    assoc_doc = frappe.get_doc("Association Information", assoc_list[0]["name"])
+    bank_doc = None
+    if assoc_doc.bank_details:
+        bank_doc = frappe.get_doc("Bank Details", assoc_doc.bank_details)
+
+    return {
+        "status": "success",
+        "association": assoc_doc.as_dict(),
+        "bank_details": bank_doc.as_dict() if bank_doc else None
+    }
+
+
+# -----------------------------
+# UPDATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def update_association():
+    """
+    Update an existing association.
+    Must provide 'name' or 'email' to identify the record.
+    """
+    data = _req()
+
+    name = data.get("name")
+    email = data.get("email")
+
+    if not name and not email:
+        frappe.throw("'name' or 'email' is required to update the association.")
+
+    filters = {}
+    if name:
+        filters["name"] = name
+    if email:
+        filters["email"] = email
+
+    assoc_list = frappe.get_all("Association Information", filters=filters, fields=["name"], limit=1)
+    if not assoc_list:
+        frappe.throw("Association not found.")
+
+    assoc_doc = frappe.get_doc("Association Information", assoc_list[0]["name"])
+
+    # Update fields if provided
+    for field in ["association_name", "association_address", "email", "contact_no"]:
+        if data.get(field):
+            if field == "contact_no":
+                assoc_doc.contact_no = parse_phone(data.get(field))
+            else:
+                setattr(assoc_doc, field, data.get(field))
+
+    assoc_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "association": assoc_doc.as_dict()
+    }
+
+# -----------------------------
+# DELETE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def delete_association(name=None, email=None):
+    """
+    Delete an association and its linked bank details safely even with two-way links.
+    """
+    if not name and not email:
+        frappe.throw("'name' or 'email' is required to delete the association.")
+
+    # Find association
+    filters = {}
+    if name:
+        filters["name"] = name
+    if email:
+        filters["email"] = email
+
+    assoc_list = frappe.get_all("Association Information", filters=filters, fields=["name", "bank_details"], limit=1)
+    if not assoc_list:
+        frappe.throw("Association not found.")
+
+    assoc_doc = frappe.get_doc("Association Information", assoc_list[0]["name"])
+
+    bank_name = assoc_doc.bank_details
+    bank_doc = None
+
+    # If linked bank exists, unlink both sides
+    if bank_name:
+        bank_doc = frappe.get_doc("Bank Details", bank_name)
+
+        # Unlink child from parent
+        bank_doc.link_field = None
+        bank_doc.save(ignore_permissions=True)
+
+        # Unlink parent from child
+        assoc_doc.bank_details = None
+        assoc_doc.save(ignore_permissions=True)
+
+    # Now safely delete both
+    assoc_doc.delete(ignore_permissions=True)
+
+    if bank_doc:
+        bank_doc.delete(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Association '{assoc_doc.name}' and its linked bank details deleted."
+    }

@@ -1,0 +1,78 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:association_name",
+ "creation": "2025-11-15 04:51:13.873378",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "association_name",
+  "association_address",
+  "email",
+  "contact_no",
+  "bank_details"
+ ],
+ "fields": [
+  {
+   "fieldname": "association_name",
+   "fieldtype": "Data",
+   "label": "Association Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "association_address",
+   "fieldtype": "Data",
+   "label": "Association Address"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "contact_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Contact No",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bank_details",
+   "fieldtype": "Link",
+   "label": "Bank Details(IBAN)",
+   "options": "Bank Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-19 05:56:55.083328",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Association Information",
+ "name_case": "Title Case",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "association_name"
+}
