@@ -494,3 +494,272 @@ def delete_association(name=None, email=None):
         "status": "success",
         "message": f"Association '{assoc_doc.name}' and its linked bank details deleted."
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import frappe
+import json
+
+
+def _req():
+    """Parse JSON body or form dict"""
+    try:
+        if frappe.request.data:
+            return json.loads(frappe.request.data)
+    except:
+        pass
+    return frappe.form_dict
+
+
+def parse_int(val):
+    try:
+        return int(val)
+    except:
+        return None
+
+
+# -----------------------------
+# Helpers
+# -----------------------------
+def validate_person_exists(person_name):
+    """Ensure person_name exists in Association Contact Person info"""
+    if not frappe.db.exists("Association Contact Person info", person_name):
+        frappe.throw(f"Person '{person_name}' does not exist in Association Contact Person info")
+
+def parse_int(value):
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except:
+        frappe.throw(f"Invalid number: {value}")
+
+
+# -----------------------------
+# CREATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def create_animal():
+
+    data = _req()
+
+    # Required: person_name
+    if not data.get("person_name"):
+        frappe.throw("'person_name' is required")
+
+    validate_person_exists(data.get("person_name"))
+
+    # Required: animal_type
+    if not data.get("animal_type"):
+        frappe.throw("'animal_type' is required")
+
+    animal_type = data.get("animal_type")
+    if animal_type not in ("Dog", "Cat"):
+        frappe.throw("'animal_type' must be 'Dog' or 'Cat'")
+
+    # Build data
+    docdata = {
+        "doctype": "Animal Information",
+        "animal_type": animal_type,
+        "person_name": data.get("person_name"),
+    }
+
+    # Validate / Restrict wrong fields
+    if animal_type == "Dog":
+        docdata["adult_dogs"] = parse_int(data.get("adult_dogs"))
+        docdata["puppies"] = parse_int(data.get("puppies"))
+        docdata["senior_sick_dogs"] = parse_int(data.get("senior_sick_dogs"))
+
+        # Restrict Cat fields
+        if any([
+            data.get("adult_cats"),
+            data.get("kittens"),
+            data.get("senior_sick_cats")
+        ]):
+            frappe.throw("You cannot submit Cat fields when animal_type is 'Dog'")
+
+    if animal_type == "Cat":
+        docdata["adult_cats"] = parse_int(data.get("adult_cats"))
+        docdata["kittens"] = parse_int(data.get("kittens"))
+        docdata["senior_sick_cats"] = parse_int(data.get("senior_sick_cats"))
+
+        # Restrict Dog fields
+        if any([
+            data.get("adult_dogs"),
+            data.get("puppies"),
+            data.get("senior_sick_dogs")
+        ]):
+            frappe.throw("You cannot submit Dog fields when animal_type is 'Cat'")
+
+    # Insert
+    doc = frappe.get_doc(docdata)
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "animal": doc.as_dict()}
+
+
+# -----------------------------
+# READ (ALL)
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_all_animals():
+    animals = frappe.get_all(
+        "Animal Information",
+        fields=["name", "animal_type", "person_name", "modified"],
+        order_by="modified desc"
+    )
+
+    result = []
+    for a in animals:
+        doc = frappe.get_doc("Animal Information", a["name"])
+        result.append(doc.as_dict())
+
+    return {"status": "success", "animals": result}
+
+
+# -----------------------------
+# READ (ONE)
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_animal(name=None, person_name=None):
+    """
+    Fetch Animal Information by either 'name' (autoname) or 'person_name'.
+    """
+    if not name and not person_name:
+        frappe.throw("Either 'name' or 'person_name' is required.")
+
+    try:
+        if name:
+            # Fetch by autoname
+            doc = frappe.get_doc("Animal Information", name)
+        else:
+            # Fetch by person_name
+            doc = frappe.get_all(
+                "Animal Information",
+                filters={"person_name": person_name},
+                limit_page_length=1
+            )
+            if not doc:
+                frappe.throw("Animal not found for the given person_name.")
+            # Get full doc using name
+            doc = frappe.get_doc("Animal Information", doc[0].name)
+
+    except frappe.DoesNotExistError:
+        frappe.throw("Animal not found.")
+
+    return {"status": "success", "animal": doc.as_dict()}
+
+
+
+# UPDATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def update_animal():
+    data = _req()
+
+    name = data.get("name")
+    person_name = data.get("person_name_lookup")  # optional, for lookup by person_name
+
+    if not name and not person_name:
+        frappe.throw("Either 'name' or 'person_name_lookup' is required for update.")
+
+    # Fetch the doc
+    try:
+        if name:
+            doc = frappe.get_doc("Animal Information", name)
+        else:
+            docs = frappe.get_all(
+                "Animal Information",
+                filters={"person_name": person_name},
+                limit_page_length=1
+            )
+            if not docs:
+                frappe.throw("Animal not found for the given person_name.")
+            doc = frappe.get_doc("Animal Information", docs[0].name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Animal not found.")
+
+    current_type = doc.animal_type
+    new_type = data.get("animal_type", current_type)
+
+    if new_type not in ("Dog", "Cat"):
+        frappe.throw("Invalid animal_type. Allowed: Dog, Cat")
+
+    # Validate person_name if updated
+    if data.get("person_name"):
+        validate_person_exists(data.get("person_name"))
+
+    # DOG updating validation
+    if new_type == "Dog" and any([
+        data.get("adult_cats"),
+        data.get("kittens"),
+        data.get("senior_sick_cats")
+    ]):
+        frappe.throw("Cannot update Cat fields when animal_type is Dog")
+
+    # CAT updating validation
+    if new_type == "Cat" and any([
+        data.get("adult_dogs"),
+        data.get("puppies"),
+        data.get("senior_sick_dogs")
+    ]):
+        frappe.throw("Cannot update Dog fields when animal_type is Cat")
+
+    # Allowed update fields
+    update_fields = [
+        "animal_type",
+        "adult_dogs", "puppies", "senior_sick_dogs",
+        "adult_cats", "kittens", "senior_sick_cats",
+        "person_name"
+    ]
+
+    for f in update_fields:
+        if data.get(f) is not None:
+            value = parse_int(data.get(f)) if f in (
+                "adult_dogs", "puppies", "senior_sick_dogs",
+                "adult_cats", "kittens", "senior_sick_cats"
+            ) else data.get(f)
+            doc.db_set(f, value, update_modified=True)
+
+    return {"status": "success", "animal": doc.as_dict()}
+
+
+# -----------------------------
+# DELETE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def delete_animal(name=None, person_name=None):
+    if not name and not person_name:
+        frappe.throw("Either 'name' or 'person_name' is required for deletion.")
+
+    try:
+        if name:
+            doc = frappe.get_doc("Animal Information", name)
+        else:
+            docs = frappe.get_all(
+                "Animal Information",
+                filters={"person_name": person_name},
+                limit_page_length=1
+            )
+            if not docs:
+                frappe.throw("Animal not found for the given person_name.")
+            doc = frappe.get_doc("Animal Information", docs[0].name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Animal not found.")
+
+    doc.delete(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": f"Animal '{doc.name}' deleted successfully."}
