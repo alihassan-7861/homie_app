@@ -763,3 +763,313 @@ def delete_animal(name=None, person_name=None):
     frappe.db.commit()
 
     return {"status": "success", "message": f"Animal '{doc.name}' deleted successfully."}
+
+
+
+
+
+
+
+import frappe
+import re
+
+# -----------------------------
+# HELPERS
+# -----------------------------
+
+def _req():
+    """Return JSON body"""
+    return frappe.request.get_json() or {}
+
+def validate_email(email):
+    """Check email format"""
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        frappe.throw("Invalid email format.")
+
+# -----------------------------
+# CREATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def create_contact_person():
+    data = _req()
+
+    # Required fields
+    required_fields = ["person_name", "email", "contact_no"]
+
+    for f in required_fields:
+        if not data.get(f):
+            frappe.throw(f"'{f}' is required.")
+
+    validate_email(data["email"])
+
+    # Check duplicate email
+    if frappe.db.exists("Association Contact Person info", data["email"]):
+        frappe.throw("A record with this email already exists.")
+
+    doc = frappe.get_doc({
+        "doctype": "Association Contact Person info",
+        "person_name": data["person_name"],
+        "email": data["email"],  # this becomes name
+        "contact_no": data["contact_no"]
+    })
+
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": "Created successfully", "data": doc.as_dict()}
+
+
+# -----------------------------
+# READ
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_contact_person(email=None):
+    if not email:
+        frappe.throw("'email' is required")
+
+    validate_email(email)
+
+    doc = frappe.get_doc("Association Contact Person info", email)
+
+    return {"status": "success", "data": doc.as_dict()}
+
+
+
+# -----------------------------
+# READ ALL
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def get_all_contact_persons():
+    """Return all records in Association Contact Person info"""
+    records = frappe.get_all(
+        "Association Contact Person info",
+        fields=["person_name", "email", "contact_no", "modified"],
+        order_by="modified desc"
+    )
+
+    # Convert to full docs (optional but cleaner)
+    result = []
+    for r in records:
+        doc = frappe.get_doc("Association Contact Person info", r["email"])
+        result.append(doc.as_dict())
+
+    return {"status": "success", "count": len(result), "data": result}
+
+
+# -----------------------------
+# UPDATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def update_contact_person():
+    data = _req()
+
+    if not data.get("email"):
+        frappe.throw("'email' is required. This is the unique identifier.")
+
+    email = data.get("email")
+    validate_email(email)
+
+    try:
+        doc = frappe.get_doc("Association Contact Person info", email)
+    except frappe.DoesNotExistError:
+        frappe.throw("Record not found.")
+
+    allowed_fields = ["person_name", "contact_no"]
+
+    for f in allowed_fields:
+        if f in data and data.get(f) is not None:
+            doc.db_set(f, data.get(f), update_modified=True)
+
+    return {"status": "success", "message": "Updated successfully", "data": doc.as_dict()}
+
+
+# -----------------------------
+# DELETE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def delete_contact_person(email=None):
+    if not email:
+        frappe.throw("'email' is required for deletion.")
+
+    validate_email(email)
+
+    try:
+        doc = frappe.get_doc("Association Contact Person info", email)
+    except frappe.DoesNotExistError:
+        frappe.throw("Record not found.")
+
+    doc.delete(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": f"Record '{email}' deleted successfully."}
+
+
+
+
+
+def parse_int(value):
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except:
+        frappe.throw(f"Invalid number: {value}")
+
+def validate_contact_person(name):
+    """Ensure linked Contact Person exists"""
+    if name and not frappe.db.exists("Association Contact Person info", name):
+        frappe.throw(f"Contact person '{name}' does not exist.")
+
+
+
+
+# -----------------------------
+# CREATE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def create_shelter():
+    data = _req()
+
+    # Required: shelter_name
+    if not data.get("shelter_name"):
+        frappe.throw("'shelter_name' is required.")
+
+    # Validate contact_person (optional)
+    if data.get("contact_person"):
+        validate_contact_person(data.get("contact_person"))
+
+    # Required fields
+    if data.get("forklift") not in ("0", "1", 0, 1):
+        frappe.throw("'forklift' is required and must be 0 or 1.")
+
+    if data.get("truck_access") not in ("Yes", "No"):
+        frappe.throw("'truck_access' must be Yes or No.")
+
+    docdata = {
+        "doctype": "Animal Shelter Partners",
+        "shelter_name": data.get("shelter_name"),
+        "country_name": data.get("country_name"),
+        "deleivery_address": data.get("deleivery_address"),
+        "contact_person": data.get("contact_person"),
+        "forklift": int(data.get("forklift")),
+        "truck_access": data.get("truck_access"),
+    }
+
+    doc = frappe.get_doc(docdata)
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "shelter": doc.as_dict()}
+
+
+
+# -----------------------------
+# READ
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def get_shelter(shelter_name=None):
+    if not shelter_name:
+        frappe.throw("'shelter_name' is required. Autoname is same as shelter_name.")
+
+    try:
+        doc = frappe.get_doc("Animal Shelter Partners", shelter_name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Shelter not found.")
+
+    return {"status": "success", "shelter": doc.as_dict()}
+
+
+
+
+
+# -----------------------------
+# READ ALL
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def get_all_shelters():
+    records = frappe.get_all(
+        "Animal Shelter Partners",
+        fields=["name", "shelter_name", "country_name", "truck_access", "modified"],
+        order_by="modified desc"
+    )
+
+    result = []
+    for r in records:
+        doc = frappe.get_doc("Animal Shelter Partners", r["name"])
+        result.append(doc.as_dict())
+
+    return {"status": "success", "shelters": result}
+
+
+
+# -----------------------------
+# UPADTE
+# -----------------------------
+
+
+@frappe.whitelist(allow_guest=True)
+def update_shelter():
+    data = _req()
+
+    if not data.get("shelter_name"):
+        frappe.throw("'shelter_name' is required to update.")
+
+    name = data.get("shelter_name")
+
+    try:
+        doc = frappe.get_doc("Animal Shelter Partners", name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Shelter not found.")
+
+    # Validate contact_person if updated
+    if data.get("contact_person"):
+        validate_contact_person(data.get("contact_person"))
+
+    # Validate truck_access
+    if data.get("truck_access") and data.get("truck_access") not in ("Yes", "No"):
+        frappe.throw("'truck_access' must be Yes or No.")
+
+    # Validate forklift
+    if data.get("forklift") not in (None, "0", "1", 0, 1):
+        frappe.throw("'forklift' must be 0 or 1.")
+
+    update_fields = [
+        "country_name",
+        "deleivery_address",
+        "contact_person",
+        "forklift",
+        "truck_access",
+    ]
+
+    for f in update_fields:
+        if data.get(f) is not None:
+            value = int(data.get(f)) if f == "forklift" else data.get(f)
+            doc.db_set(f, value, update_modified=True)
+
+    return {"status": "success", "shelter": doc.as_dict()}
+
+
+
+
+# -----------------------------
+# DELETE
+# -----------------------------
+
+
+
+@frappe.whitelist(allow_guest=True)
+def delete_shelter(shelter_name=None):
+    if not shelter_name:
+        frappe.throw("'shelter_name' is required for deletion.")
+
+    try:
+        doc = frappe.get_doc("Animal Shelter Partners", shelter_name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Shelter not found.")
+
+    doc.delete(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": f"Shelter '{shelter_name}' deleted successfully."}

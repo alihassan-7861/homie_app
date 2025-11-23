@@ -28,7 +28,7 @@
   },
   {
    "fieldname": "contact_no",
-   "fieldtype": "Phone",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Contact No",
    "reqd": 1
@@ -36,7 +36,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-21 05:57:40.308140",
+ "modified": "2025-11-23 10:50:42.541254",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Association Contact Person info",

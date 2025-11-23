@@ -36,8 +36,9 @@
   },
   {
    "fieldname": "contact_person",
-   "fieldtype": "Data",
-   "label": "Contact Person Name"
+   "fieldtype": "Link",
+   "label": "Contact Person Name",
+   "options": "Association Contact Person info"
   },
   {
    "default": "0",
@@ -58,7 +59,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-15 07:19:11.568411",
+ "modified": "2025-11-23 11:12:25.738488",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Animal Shelter Partners",
