@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2025-11-24 08:19:25.722219",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "castration_costs",
+  "exemption_notice",
+  "notice_issue_date",
+  "animal_shelter_statues",
+  "food_requirements_dogs",
+  "food_requirements_cats",
+  "castration_costs_in",
+  "person_details"
+ ],
+ "fields": [
+  {
+   "fieldname": "castration_costs",
+   "fieldtype": "Currency",
+   "label": "Castration Costs (\u20ac)"
+  },
+  {
+   "fieldname": "exemption_notice",
+   "fieldtype": "Attach",
+   "label": "Exemption notice"
+  },
+  {
+   "fieldname": "notice_issue_date",
+   "fieldtype": "Datetime",
+   "label": "Notice Issue Date"
+  },
+  {
+   "fieldname": "animal_shelter_statues",
+   "fieldtype": "Attach",
+   "label": "Animal Shelter Statues"
+  },
+  {
+   "fieldname": "food_requirements_dogs",
+   "fieldtype": "Data",
+   "label": "Food Requirement (Dog)"
+  },
+  {
+   "fieldname": "food_requirements_cats",
+   "fieldtype": "Data",
+   "label": "Food Requirement(Cats)"
+  },
+  {
+   "fieldname": "castration_costs_in",
+   "fieldtype": "Currency",
+   "label": "Castration Costs "
+  },
+  {
+   "fieldname": "person_details",
+   "fieldtype": "Link",
+   "label": "Contacted Person Details",
+   "options": "Association Contact Person info"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-24 08:20:50.274465",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Person Demands",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1073,3 +1073,300 @@ def delete_shelter(shelter_name=None):
     frappe.db.commit()
 
     return {"status": "success", "message": f"Shelter '{shelter_name}' deleted successfully."}
+
+
+
+
+
+
+def parse_float(value):
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except:
+        frappe.throw(f"Invalid currency value: {value}")
+
+def validate_person(person_name):
+    """Ensure linked Contact Person exists."""
+    if person_name and not frappe.db.exists("Association Contact Person info", person_name):
+        frappe.throw(f"Person '{person_name}' does not exist.")
+
+
+# -----------------------------
+# CREATE
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def create_person_demand():
+    data = _req()
+
+    # Validate link field
+    if data.get("person_details"):
+        validate_person(data.get("person_details"))
+
+    docdata = {
+        "doctype": "Person Demands",
+        "castration_costs": parse_float(data.get("castration_costs")),
+        "exemption_notice": data.get("exemption_notice"),
+        "notice_issue_date": data.get("notice_issue_date"),
+        "animal_shelter_statues": data.get("animal_shelter_statues"),
+        "food_requirements_dogs": data.get("food_requirements_dogs"),
+        "food_requirements_cats": data.get("food_requirements_cats"),
+        "castration_costs_in": parse_float(data.get("castration_costs_in")),
+        "person_details": data.get("person_details"),
+    }
+
+    doc = frappe.get_doc(docdata)
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "record": doc.as_dict()}
+
+
+
+# -----------------------------
+# READ
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def get_person_demand(id=None):
+    if not id:
+        frappe.throw("'id' is required (autoincrement ID).")
+
+    try:
+        doc = frappe.get_doc("Person Demands", id)
+    except frappe.DoesNotExistError:
+        frappe.throw("Record not found.")
+
+    return {"status": "success", "record": doc.as_dict()}
+
+# -----------------------------
+# READ ALL
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def get_all_person_demands():
+    records = frappe.get_all(
+        "Person Demands",
+        fields=["name", "castration_costs", "person_details", "modified"],
+        order_by="modified desc"
+    )
+
+    result = []
+    for r in records:
+        doc = frappe.get_doc("Person Demands", r["name"])
+        result.append(doc.as_dict())
+
+    return {"status": "success", "records": result}
+
+# -----------------------------
+# UPDATE
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def update_person_demand():
+    data = _req()
+
+    if not data.get("id"):
+        frappe.throw("'id' is required to update Person Demands record.")
+
+    name = data.get("id")
+
+    try:
+        doc = frappe.get_doc("Person Demands", name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Record not found.")
+
+    # Validate link field
+    if data.get("person_details"):
+        validate_person(data.get("person_details"))
+
+    update_fields = [
+        "castration_costs",
+        "exemption_notice",
+        "notice_issue_date",
+        "animal_shelter_statues",
+        "food_requirements_dogs",
+        "food_requirements_cats",
+        "castration_costs_in",
+        "person_details",
+    ]
+
+    for f in update_fields:
+        if data.get(f) is not None:
+            value = parse_float(data.get(f)) if f in ["castration_costs", "castration_costs_in"] else data.get(f)
+            doc.db_set(f, value, update_modified=True)
+
+    return {"status": "success", "record": doc.as_dict()}
+
+
+# -----------------------------
+# DELETE
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def delete_person_demand(id=None):
+    if not id:
+        frappe.throw("'id' is required for deletion.")
+
+    try:
+        doc = frappe.get_doc("Person Demands", id)
+    except frappe.DoesNotExistError:
+        frappe.throw("Record not found.")
+
+    # Safe delete (does not affect linked table)
+    doc.delete(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": f"Person Demand '{id}' deleted successfully."}
+
+
+
+import frappe
+
+def _req():
+    return frappe.local.form_dict
+
+def validate_contact_person(name):
+    """Ensure linked Contact Person exists"""
+    if name and not frappe.db.exists("Association Contact Person info", name):
+        frappe.throw(f"Contact person '{name}' does not exist.")
+
+
+
+# -----------------------------
+# CREATE
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def create_delivery_info():
+    data = _req()
+
+    # Required validation for select field
+    if data.get("deleivery_type") not in ("Own Purchase", "Donated From Homie"):
+        frappe.throw("'deleivery_type' must be 'Own Purchase' or 'Donated From Homie'.")
+
+    # Validate contact person (optional field)
+    if data.get("contacted_person"):
+        validate_contact_person(data.get("contacted_person"))
+
+    docdata = {
+        "doctype": "Deleivery Informations",
+        "date": data.get("date"),
+        "no_of_pallets": frappe.utils.cint(data.get("no_of_pallets")) if data.get("no_of_pallets") else None,
+        "deleivery_type": data.get("deleivery_type"),
+        "no_of_kilogram": float(data.get("no_of_kilogram")) if data.get("no_of_kilogram") else None,
+        "deleivery_date": data.get("deleivery_date"),
+        "arrival_proof": data.get("arrival_proof"),
+        "deleivery_note": data.get("deleivery_note"),
+        "contacted_person": data.get("contacted_person"),
+    }
+
+    doc = frappe.get_doc(docdata)
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "delivery_info": doc.as_dict()}
+
+
+# -----------------------------
+# READ
+# -----------------------------
+
+@frappe.whitelist(allow_guest=True)
+def get_delivery_info(name=None):
+    if not name:
+        frappe.throw("'name' is required. This is the autoincrement ID.")
+
+    try:
+        doc = frappe.get_doc("Deleivery Informations", name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Delivery info not found.")
+
+    return {"status": "success", "delivery_info": doc.as_dict()}
+
+# -----------------------------
+# READ ALL
+# -----------------------------
+
+
+@frappe.whitelist(allow_guest=True)
+def get_all_delivery_info():
+    records = frappe.get_all(
+        "Deleivery Informations",
+        fields=["name", "deleivery_type", "deleivery_date", "modified"],
+        order_by="modified desc"
+    )
+
+    result = []
+    for r in records:
+        doc = frappe.get_doc("Deleivery Informations", r["name"])
+        result.append(doc.as_dict())
+
+    return {"status": "success", "delivery_info": result}
+
+# -----------------------------
+# UPDATE
+# -----------------------------
+
+
+@frappe.whitelist(allow_guest=True)
+def update_delivery_info():
+    data = _req()
+
+    if not data.get("name"):
+        frappe.throw("'name' is required to update.")
+
+    name = data.get("name")
+
+    try:
+        doc = frappe.get_doc("Deleivery Informations", name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Delivery info not found.")
+
+    if data.get("contacted_person"):
+        validate_contact_person(data.get("contacted_person"))
+
+    if data.get("deleivery_type") and data.get("deleivery_type") not in (
+        "Own Purchase", "Donated From Homie"
+    ):
+        frappe.throw("'deleivery_type' must be 'Own Purchase' or 'Donated From Homie'.")
+
+    update_fields = [
+        "date",
+        "no_of_pallets",
+        "deleivery_type",
+        "no_of_kilogram",
+        "deleivery_date",
+        "arrival_proof",
+        "deleivery_note",
+        "contacted_person",
+    ]
+
+    for f in update_fields:
+        if data.get(f) is not None:
+            value = int(data.get(f)) if f == "no_of_pallets" else (
+                float(data.get(f)) if f == "no_of_kilogram" else data.get(f)
+            )
+            doc.db_set(f, value, update_modified=True)
+
+    return {"status": "success", "delivery_info": doc.as_dict()}
+
+# -----------------------------
+# DELETE
+# -----------------------------
+@frappe.whitelist(allow_guest=True)
+def delete_delivery_info(name=None):
+    if not name:
+        frappe.throw("'name' is required for deletion.")
+
+    try:
+        doc = frappe.get_doc("Deleivery Informations", name)
+    except frappe.DoesNotExistError:
+        frappe.throw("Delivery info not found.")
+
+    doc.delete(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"status": "success", "message": f"Record '{name}' deleted successfully."}
