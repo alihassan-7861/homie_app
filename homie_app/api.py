@@ -10,6 +10,15 @@ import frappe
 import json
 from frappe.utils import get_datetime
 
+
+
+
+
+def require_login():
+    if frappe.session.user == "Guest":
+        frappe.throw("Authentication required. Please login first.", frappe.PermissionError)
+
+
 def _parse_request_json():
     """Parse JSON body and merge with query params (form_dict)."""
     data = {}
@@ -77,12 +86,14 @@ def validate_payload(payload):
         frappe.throw("Invalid 'last_name'. Only alphabets allowed.")
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_donation():
     """
     Create a Donation and child Donation Items.
     Idempotency: if a Donation with same 'hash' or 'donation_number' exists, returns it (no duplicate).
     """
+    require_login()
+
     payload = _parse_request_json()
 
     # ✅ Apply validation before inserting
@@ -137,8 +148,10 @@ def create_donation():
 
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_payment():
+    require_login()
+
     """
     Create a Donation Payment and link to Donation if possible.
     Idempotency: if 'number' (transaction id) or 'hash' already exists, returns existing.
@@ -262,8 +275,12 @@ def parse_phone(phone):
 # -----------------------------
 # CREATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+
+#4d9cee910c562c1
+@frappe.whitelist()
 def create_association():
+    require_login()
+
     data = _req()
 
     required = ["association_name", "email", "contact_no", "iban_no"]
@@ -332,11 +349,12 @@ def create_association():
 # -----------------------------
 # GET ALL ASSOCIATIONS
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_associations():
     """
     Fetch all associations with their linked bank details.
     """
+    require_login()
     associations = frappe.get_all(
         "Association Information",
         fields=["name", "association_name", "association_address", "email", "contact_no", "bank_details"],
@@ -362,11 +380,13 @@ def get_all_associations():
 # -----------------------------
 # GET SPECIFIC ASSOCIATION
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_association(name=None, email=None):
+
     """
     Get association by name or email.
     """
+    require_login()
     if not name and not email:
         frappe.throw("'name' or 'email' is required to fetch the association.")
 
@@ -401,12 +421,13 @@ def get_association(name=None, email=None):
 # -----------------------------
 # UPDATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_association():
     """
     Update an existing association.
     Must provide 'name' or 'email' to identify the record.
     """
+    require_login()
     data = _req()
 
     name = data.get("name")
@@ -446,11 +467,12 @@ def update_association():
 # -----------------------------
 # DELETE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_association(name=None, email=None):
     """
     Delete an association and its linked bank details safely even with two-way links.
     """
+    require_login()
     if not name and not email:
         frappe.throw("'name' or 'email' is required to delete the association.")
 
@@ -497,21 +519,6 @@ def delete_association(name=None, email=None):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-import frappe
-import json
-
-
 def _req():
     """Parse JSON body or form dict"""
     try:
@@ -549,9 +556,10 @@ def parse_int(value):
 # -----------------------------
 # CREATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_animal():
 
+    require_login()
     data = _req()
 
     # Required: person_name
@@ -613,8 +621,10 @@ def create_animal():
 # -----------------------------
 # READ (ALL)
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_animals():
+    require_login()
+
     animals = frappe.get_all(
         "Animal Information",
         fields=["name", "animal_type", "person_name", "modified"],
@@ -632,11 +642,14 @@ def get_all_animals():
 # -----------------------------
 # READ (ONE)
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+
 def get_animal(name=None, person_name=None):
+
     """
     Fetch Animal Information by either 'name' (autoname) or 'person_name'.
     """
+    require_login()
     if not name and not person_name:
         frappe.throw("Either 'name' or 'person_name' is required.")
 
@@ -665,8 +678,9 @@ def get_animal(name=None, person_name=None):
 
 # UPDATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_animal():
+    require_login()
     data = _req()
 
     name = data.get("name")
@@ -739,8 +753,9 @@ def update_animal():
 # -----------------------------
 # DELETE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_animal(name=None, person_name=None):
+    require_login()
     if not name and not person_name:
         frappe.throw("Either 'name' or 'person_name' is required for deletion.")
 
@@ -789,8 +804,9 @@ def validate_email(email):
 # -----------------------------
 # CREATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_contact_person():
+    require_login()
     data = _req()
 
     # Required fields
@@ -822,8 +838,9 @@ def create_contact_person():
 # -----------------------------
 # READ
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_contact_person(email=None):
+    require_login()
     if not email:
         frappe.throw("'email' is required")
 
@@ -838,9 +855,10 @@ def get_contact_person(email=None):
 # -----------------------------
 # READ ALL
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_contact_persons():
     """Return all records in Association Contact Person info"""
+    require_login()
     records = frappe.get_all(
         "Association Contact Person info",
         fields=["person_name", "email", "contact_no", "modified"],
@@ -859,8 +877,10 @@ def get_all_contact_persons():
 # -----------------------------
 # UPDATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
+
 def update_contact_person():
+    require_login()
     data = _req()
 
     if not data.get("email"):
@@ -886,8 +906,9 @@ def update_contact_person():
 # -----------------------------
 # DELETE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_contact_person(email=None):
+    require_login()
     if not email:
         frappe.throw("'email' is required for deletion.")
 
@@ -926,8 +947,9 @@ def validate_contact_person(name):
 # -----------------------------
 # CREATE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_shelter():
+    require_login()
     data = _req()
 
     # Required: shelter_name
@@ -967,8 +989,9 @@ def create_shelter():
 # READ
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_shelter(shelter_name=None):
+    require_login()
     if not shelter_name:
         frappe.throw("'shelter_name' is required. Autoname is same as shelter_name.")
 
@@ -987,8 +1010,9 @@ def get_shelter(shelter_name=None):
 # READ ALL
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_shelters():
+    require_login()
     records = frappe.get_all(
         "Animal Shelter Partners",
         fields=["name", "shelter_name", "country_name", "truck_access", "modified"],
@@ -1009,8 +1033,9 @@ def get_all_shelters():
 # -----------------------------
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_shelter():
+    require_login()
     data = _req()
 
     if not data.get("shelter_name"):
@@ -1059,8 +1084,9 @@ def update_shelter():
 
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_shelter(shelter_name=None):
+    require_login()
     if not shelter_name:
         frappe.throw("'shelter_name' is required for deletion.")
 
@@ -1097,8 +1123,9 @@ def validate_person(person_name):
 # CREATE
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_person_demand():
+    require_login()
     data = _req()
 
     # Validate link field
@@ -1129,8 +1156,9 @@ def create_person_demand():
 # READ
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_person_demand(id=None):
+    require_login()
     if not id:
         frappe.throw("'id' is required (autoincrement ID).")
 
@@ -1145,8 +1173,9 @@ def get_person_demand(id=None):
 # READ ALL
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_person_demands():
+    require_login()
     records = frappe.get_all(
         "Person Demands",
         fields=["name", "castration_costs", "person_details", "modified"],
@@ -1164,8 +1193,9 @@ def get_all_person_demands():
 # UPDATE
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_person_demand():
+    require_login()
     data = _req()
 
     if not data.get("id"):
@@ -1205,8 +1235,9 @@ def update_person_demand():
 # DELETE
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_person_demand(id=None):
+    require_login()
     if not id:
         frappe.throw("'id' is required for deletion.")
 
@@ -1239,8 +1270,9 @@ def validate_contact_person(name):
 # CREATE
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_delivery_info():
+    require_login()
     data = _req()
 
     # Required validation for select field
@@ -1274,8 +1306,9 @@ def create_delivery_info():
 # READ
 # -----------------------------
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_delivery_info(name=None):
+    require_login()
     if not name:
         frappe.throw("'name' is required. This is the autoincrement ID.")
 
@@ -1291,8 +1324,9 @@ def get_delivery_info(name=None):
 # -----------------------------
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_all_delivery_info():
+    require_login()
     records = frappe.get_all(
         "Deleivery Informations",
         fields=["name", "deleivery_type", "deleivery_date", "modified"],
@@ -1311,8 +1345,9 @@ def get_all_delivery_info():
 # -----------------------------
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def update_delivery_info():
+    require_login()
     data = _req()
 
     if not data.get("name"):
@@ -1356,8 +1391,9 @@ def update_delivery_info():
 # -----------------------------
 # DELETE
 # -----------------------------
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def delete_delivery_info(name=None):
+    require_login()
     if not name:
         frappe.throw("'name' is required for deletion.")
 
@@ -1370,3 +1406,119 @@ def delete_delivery_info(name=None):
     frappe.db.commit()
 
     return {"status": "success", "message": f"Record '{name}' deleted successfully."}
+
+
+
+
+
+
+
+
+
+
+
+import frappe
+
+def _req():
+    """Helper to get JSON request body"""
+    return frappe.local.form_dict if frappe.local.form_dict else frappe.request.get_json()
+
+
+# ---------------------------------------------------------
+# 1. CREATE DONATION PRODUCT
+# ---------------------------------------------------------
+@frappe.whitelist()
+def create_donation_product():
+    require_login()
+    data = _req()
+
+    if not data.get("product_name"):
+        frappe.throw("'product_name' is required.")
+
+    docdata = {
+        "doctype": "Donation Products",
+        "product_name": data.get("product_name"),
+        "product_price": float(data.get("product_price")) if data.get("product_price") else 0,
+        "product_image": data.get("product_image")
+    }
+
+    doc = frappe.get_doc(docdata)
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "product": doc.as_dict()
+    }
+
+
+# ---------------------------------------------------------
+# 2. READ SINGLE PRODUCT
+# ---------------------------------------------------------
+@frappe.whitelist()
+def get_donation_product(product_name):
+    require_login()
+
+    try:
+        doc = frappe.get_doc("Donation Products", product_name)
+        return doc.as_dict()
+    except frappe.DoesNotExistError:
+        return {"error": "Product not found", "product_name": product_name}
+
+
+# ---------------------------------------------------------
+# 3. LIST ALL PRODUCTS
+# ---------------------------------------------------------
+@frappe.whitelist()
+def list_donation_products():
+    require_login()
+    docs = frappe.get_all(
+        "Donation Products",
+        fields=["*"],
+        order_by="creation desc"
+    )
+    return docs
+
+
+# ---------------------------------------------------------
+# 4. UPDATE DONATION PRODUCT
+# ---------------------------------------------------------
+@frappe.whitelist()
+def update_donation_product():
+    require_login()
+    data = _req()
+
+    if not data.get("product_name"):
+        frappe.throw("'product_name' is required to update record.")
+
+    try:
+        doc = frappe.get_doc("Donation Products", data.get("product_name"))
+    except frappe.DoesNotExistError:
+        return {"error": "Product not found"}
+
+    # Update fields if provided
+    for field in ["product_price", "product_image"]:
+        if field in data:
+            setattr(doc, field, data.get(field))
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "updated",
+        "product": doc.as_dict()
+    }
+
+
+# ---------------------------------------------------------
+# 5. DELETE PRODUCT
+# ---------------------------------------------------------
+@frappe.whitelist()
+def delete_donation_product(product_name):
+    require_login()
+    try:
+        frappe.delete_doc("Donation Products", product_name, ignore_permissions=True)
+        frappe.db.commit()
+        return {"status": "deleted", "product_name": product_name}
+    except frappe.DoesNotExistError:
+        return {"error": "Product not found"}
