@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestAssociationContactPersonInfo(FrappeTestCase):
+class TestAssociationContactPersoninfo(FrappeTestCase):
 	pass
