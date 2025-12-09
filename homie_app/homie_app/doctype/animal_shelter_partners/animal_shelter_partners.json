@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "SHR-.######",
+ "creation": "2025-12-09 18:32:13.335667",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "shelter_name",
+  "country",
+  "delievery_address",
+  "forklift",
+  "truck_access",
+  "column_break_lqcqn",
+  "shipping_country",
+  "shipping_city",
+  "shipping_street",
+  "shipping_street_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "label": "Shelter Name"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "delievery_address",
+   "fieldtype": "Data",
+   "label": "Delievery Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "forklift",
+   "fieldtype": "Check",
+   "label": "Forklift"
+  },
+  {
+   "fieldname": "truck_access",
+   "fieldtype": "Select",
+   "label": "Truck Access",
+   "options": "Yes\nNo"
+  },
+  {
+   "fieldname": "column_break_lqcqn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shipping_country",
+   "fieldtype": "Link",
+   "label": "Shipping Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "shipping_city",
+   "fieldtype": "Data",
+   "label": "Shipping City"
+  },
+  {
+   "fieldname": "shipping_street",
+   "fieldtype": "Data",
+   "label": "Shipping Street"
+  },
+  {
+   "fieldname": "shipping_street_number",
+   "fieldtype": "Data",
+   "label": "Street Number"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-09 18:34:10.131359",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Animal Shelter Partners",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
