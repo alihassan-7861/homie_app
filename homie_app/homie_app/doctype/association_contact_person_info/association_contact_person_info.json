@@ -78,7 +78,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-09 14:43:39.461367",
+ "modified": "2025-12-09 15:02:23.189331",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Association Contact Person info",
@@ -100,5 +100,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "email"
 }

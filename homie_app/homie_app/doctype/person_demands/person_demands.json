@@ -56,7 +56,7 @@
    "fieldname": "person_details",
    "fieldtype": "Link",
    "label": "Contacted Person Details",
-   "options": "Association Contact Person Info"
+   "options": "Association Contact Person info"
   }
  ],
  "index_web_pages_for_search": 1,
