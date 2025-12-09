@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "autoincrement",
+ "autoname": "DEM-.######",
  "creation": "2025-11-24 08:19:25.722219",
  "default_view": "List",
  "doctype": "DocType",
@@ -61,11 +61,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-24 08:20:50.274465",
+ "modified": "2025-12-09 05:54:30.607350",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Person Demands",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {

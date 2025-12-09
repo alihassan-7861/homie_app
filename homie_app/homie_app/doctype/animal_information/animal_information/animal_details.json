@@ -13,8 +13,7 @@
   "senior_sick_dogs",
   "adult_cats",
   "kittens",
-  "senior_sick_cats",
-  "person_name"
+  "senior_sick_cats"
  ],
  "fields": [
   {
@@ -54,20 +53,14 @@
    "fieldname": "senior_sick_cats",
    "fieldtype": "Int",
    "label": "Number of Senior Cats"
-  },
-  {
-   "fieldname": "person_name",
-   "fieldtype": "Link",
-   "label": "Person Detail",
-   "options": "Association Contact Person info"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-09 05:59:35.001492",
+ "modified": "2025-12-07 18:54:47.947517",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Animal Information",
+ "name": "Animal Details",
  "name_case": "Title Case",
  "naming_rule": "Autoincrement",
  "owner": "Administrator",

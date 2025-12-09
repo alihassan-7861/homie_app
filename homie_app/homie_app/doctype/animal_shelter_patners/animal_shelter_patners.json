@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:shelter_name",
+ "autoname": "SHR-.######",
  "creation": "2025-11-15 07:10:32.386956",
  "default_view": "List",
  "doctype": "DocType",
@@ -11,9 +11,14 @@
   "shelter_name",
   "country_name",
   "deleivery_address",
-  "contact_person",
   "forklift",
-  "truck_access"
+  "truck_access",
+  "column_break_ffgh0",
+  "shipping_country",
+  "shipping_city",
+  "shipping_street",
+  "shipping_street_number",
+  "contact_person"
  ],
  "fields": [
   {
@@ -26,19 +31,14 @@
   },
   {
    "fieldname": "country_name",
-   "fieldtype": "Data",
-   "label": "Country Name"
+   "fieldtype": "Link",
+   "label": "Country Name",
+   "options": "Country"
   },
   {
    "fieldname": "deleivery_address",
    "fieldtype": "Data",
    "label": "Delievery Address"
-  },
-  {
-   "fieldname": "contact_person",
-   "fieldtype": "Link",
-   "label": "Contact Person Name",
-   "options": "Association Contact Person info"
   },
   {
    "default": "0",
@@ -55,16 +55,47 @@
    "label": "Truck Access",
    "options": "Yes\nNo",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ffgh0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "shipping_country",
+   "fieldtype": "Link",
+   "label": "Shipping Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "shipping_city",
+   "fieldtype": "Data",
+   "label": "Shipping City"
+  },
+  {
+   "fieldname": "shipping_street",
+   "fieldtype": "Data",
+   "label": "Shipping Street"
+  },
+  {
+   "fieldname": "shipping_street_number",
+   "fieldtype": "Data",
+   "label": "Street Number"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Contact Person Name",
+   "options": "Association Contact Person info"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-23 11:12:25.738488",
+ "modified": "2025-12-09 05:57:32.492512",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Animal Shelter Partners",
+ "name": "Animal Shelter Patners",
  "name_case": "Title Case",
- "naming_rule": "By fieldname",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {

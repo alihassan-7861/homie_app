@@ -1522,3 +1522,173 @@ def delete_donation_product(product_name):
         return {"status": "deleted", "product_name": product_name}
     except frappe.DoesNotExistError:
         return {"error": "Product not found"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -------------------------------
+# Helper: Parse JSON input safely
+# -------------------------------
+def get_request_data():
+    if frappe.request and frappe.request.data:
+        try:
+            return json.loads(frappe.request.data)
+        except:
+            return {}
+    return frappe.form_dict
+
+
+# --------------------------------
+# CREATE Organization
+# --------------------------------
+@frappe.whitelist(allow_guest=False)
+def create_organization():
+    require_login()
+
+    data = get_request_data()
+
+    required_fields = ["organization_name", "country", "status"]
+    for field in required_fields:
+        if not data.get(field):
+            frappe.throw(_(f"'{field}' is required"))
+
+    doc = frappe.new_doc("Organizations")
+    doc.organization_name = data.get("organization_name")
+    doc.country = data.get("country")
+    doc.status = data.get("status")
+    doc.contact_person = data.get("contact_person")
+    doc.logo = data.get("logo")
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "message": "Organization created successfully",
+        "id": doc.name  # ORG-00001
+    }
+
+
+# --------------------------------
+# READ — Get Organization by ID
+# --------------------------------
+@frappe.whitelist(allow_guest=False)
+def get_organization(id):
+    require_login()
+
+    try:
+        doc = frappe.get_doc("Organizations", id)
+        return doc.as_dict()
+    except frappe.DoesNotExistError:
+        frappe.throw(_("Organization not found"))
+
+
+# --------------------------------
+# READ ALL Organizations
+# --------------------------------
+@frappe.whitelist(allow_guest=False)
+def get_all_organizations():
+    require_login()
+    docs = frappe.get_all(
+        "Organizations",
+        fields=["name", "organization_name", "country", "status", "contact_person", "logo"],
+        order_by="creation desc"
+    )
+    return docs
+
+
+# --------------------------------
+# UPDATE Organization by ID
+# --------------------------------
+@frappe.whitelist(allow_guest=False)
+def update_organization(id):
+    require_login()
+    data = get_request_data()
+
+    try:
+        doc = frappe.get_doc("Organizations", id)
+    except frappe.DoesNotExistError:
+        frappe.throw(_("Organization not found"))
+
+    # Update allowed fields
+    for field in ["organization_name", "country", "status", "contact_person", "logo"]:
+        if field in data:
+            setattr(doc, field, data[field])
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "message": "Organization updated successfully",
+        "id": id
+    }
+
+
+# --------------------------------
+# DELETE Organization by ID
+# --------------------------------
+@frappe.whitelist(allow_guest=False)
+def delete_organization(id):
+    require_login()
+    try:
+        frappe.delete_doc("Organizations", id, ignore_permissions=True)
+        frappe.db.commit()
+        return {"message": "Organization deleted successfully", "id": id}
+
+    except frappe.DoesNotExistError:
+        frappe.throw(_("Organization not found"))
+
+
+
+
+
+# homie_app/api.py
+import frappe
+from frappe import _
+
+def get_organization_stats():
+    """
+    Return chart-friendly data for Organization status breakdown and counts.
+
+    Format returned must be:
+    {
+      "labels": ["Active", "Inactive"],
+      "datasets": [
+         {"name": "Organizations", "values": [active_count, inactive_count]}
+      ]
+    }
+    """
+    # counts
+    active = frappe.db.count("Organizations", {"status": "Active"})
+    inactive = frappe.db.count("Organizations", {"status": "Inactive"})
+    total = active + inactive
+
+    # The structure expected by ERPNext chart Data Source = API:
+    return {
+        "labels": ["Active", "Inactive"],
+        "datasets": [
+            {"name": "Organizations", "values": [active, inactive]}
+        ],
+        # optional: you can return extra fields for a custom card if needed
+        "meta": {
+            "total": total
+        }
+    }

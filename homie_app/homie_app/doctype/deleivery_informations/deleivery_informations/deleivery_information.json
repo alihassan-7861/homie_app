@@ -18,15 +18,9 @@
   "shipping_country",
   "shipping_city",
   "shipping_street",
-  "street_number",
-  "contacted_person"
+  "street_number"
  ],
  "fields": [
-  {
-   "fieldname": "order_date",
-   "fieldtype": "Datetime",
-   "label": "Order Date "
-  },
   {
    "fieldname": "no_of_pallets",
    "fieldtype": "Int",
@@ -59,6 +53,11 @@
    "label": "Delivery note"
   },
   {
+   "fieldname": "order_date",
+   "fieldtype": "Datetime",
+   "label": "Order Date "
+  },
+  {
    "fieldname": "column_break_6q8za",
    "fieldtype": "Column Break"
   },
@@ -82,20 +81,14 @@
    "fieldname": "street_number",
    "fieldtype": "Int",
    "label": "Street Number"
-  },
-  {
-   "fieldname": "contacted_person",
-   "fieldtype": "Link",
-   "label": "Contacted Person",
-   "options": "Association Contact Person info"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-09 05:52:56.428874",
+ "modified": "2025-12-07 17:57:31.440076",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Deleivery Informations",
+ "name": "Deleivery Information",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [

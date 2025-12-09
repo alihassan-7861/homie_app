@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:association_name",
- "creation": "2025-11-15 04:51:13.873378",
+ "creation": "2025-12-09 05:41:12.925771",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -31,8 +31,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Email",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
   },
   {
    "fieldname": "contact_no",
@@ -50,11 +49,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-19 05:56:55.083328",
+ "modified": "2025-12-09 05:41:12.925771",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Association Information",
- "name_case": "Title Case",
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
@@ -73,6 +71,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "title_field": "association_name"
+ "states": []
 }

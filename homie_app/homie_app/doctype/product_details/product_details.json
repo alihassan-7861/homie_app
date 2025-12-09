@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PRO-.######",
+ "creation": "2025-12-05 05:44:59.249290",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "product_name",
+  "product_description",
+  "product_description_2",
+  "product_status",
+  "product_image_mobile",
+  "column_break_zf7ub",
+  "product_image_desktop",
+  "product_price",
+  "product_category",
+  "type"
+ ],
+ "fields": [
+  {
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name"
+  },
+  {
+   "fieldname": "product_description",
+   "fieldtype": "Small Text",
+   "label": "Product Description"
+  },
+  {
+   "fieldname": "product_description_2",
+   "fieldtype": "Small Text",
+   "label": "Product Description 2"
+  },
+  {
+   "fieldname": "product_status",
+   "fieldtype": "Select",
+   "label": "Product Status",
+   "options": "Instock\nOut of stock"
+  },
+  {
+   "fieldname": "product_image_mobile",
+   "fieldtype": "Attach Image",
+   "label": "Product Image(mobile)"
+  },
+  {
+   "fieldname": "column_break_zf7ub",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_image_desktop",
+   "fieldtype": "Attach Image",
+   "label": "Product Image(desktop)"
+  },
+  {
+   "fieldname": "product_price",
+   "fieldtype": "Currency",
+   "label": "Price"
+  },
+  {
+   "fieldname": "product_category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Cat\nDog"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Food\nMoney"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-05 05:44:59.249290",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Product Details",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "product_name"
+}
