@@ -5,7 +5,7 @@ import re
 # import frappe
 from frappe.model.document import Document
 
-class AssociationContactPersoninfo(Document):
+class AssociationContactPersonInfo(Document):
 	def validate(self):
          if self.email:
             # simple regex check
