@@ -1,23 +1,24 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:email",
+ "autoname": "PER-.######",
  "creation": "2025-11-15 06:28:45.690088",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "person_name",
+  "first_name",
+  "last_name",
   "email",
-  "contact_no"
+  "contact_no",
+  "street",
+  "column_break_percd",
+  "street_number",
+  "person_country",
+  "person_city"
  ],
  "fields": [
-  {
-   "fieldname": "person_name",
-   "fieldtype": "Data",
-   "label": "Person Name"
-  },
   {
    "fieldname": "email",
    "fieldtype": "Data",
@@ -32,16 +33,51 @@
    "in_list_view": 1,
    "label": "Contact No",
    "reqd": 1
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "street",
+   "fieldtype": "Data",
+   "label": "Street"
+  },
+  {
+   "fieldname": "column_break_percd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "street_number",
+   "fieldtype": "Data",
+   "label": "Street Number"
+  },
+  {
+   "fieldname": "person_country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "person_city",
+   "fieldtype": "Data",
+   "label": "City"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-23 10:50:42.541254",
+ "modified": "2025-12-09 07:59:19.128592",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Association Contact Person info",
  "name_case": "Title Case",
- "naming_rule": "By fieldname",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
