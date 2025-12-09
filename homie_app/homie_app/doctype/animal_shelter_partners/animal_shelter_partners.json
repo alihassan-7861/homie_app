@@ -66,11 +66,7 @@
    "label": "Shipping Country",
    "options": "Country"
   },
-  {
-   "fieldname": "shipping_city",
-   "fieldtype": "Data",
-   "label": "Shipping City"
-  },
+  
   {
    "fieldname": "shipping_street",
    "fieldtype": "Data",
