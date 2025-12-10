@@ -1,27 +1,34 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "DON-.######",
  "creation": "2025-09-26 18:41:03.139030",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "hash",
   "donation_number",
-  "email",
-  "first_name",
-  "last_name",
+  "local_number",
   "is_anonymous",
-  "donated_at",
-  "total",
-  "currency",
-  "wishlist",
-  "source",
-  "company",
-  "ip_address",
-  "user_agent",
   "is_subscription",
+  "donated_at",
+  "currency",
+  "user_agent",
+  "ip_address",
+  "hash",
+  "tracking_facebook_fbc",
+  "tracking_facebook_fbp",
+  "wishlist",
+  "local_wishlist",
+  "local_wishlist_title",
+  "source",
+  "total",
+  "bacs_paid",
+  "should_reprocessing",
+  "reprocessing_number",
+  "organization",
+  "contact_person",
   "items"
  ],
  "fields": [
@@ -38,21 +45,6 @@
    "label": "Donation Number"
   },
   {
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "Email"
-  },
-  {
-   "fieldname": "first_name",
-   "fieldtype": "Data",
-   "label": "First Name"
-  },
-  {
-   "fieldname": "last_name",
-   "fieldtype": "Data",
-   "label": "Last Name"
-  },
-  {
    "default": "0",
    "fieldname": "is_anonymous",
    "fieldtype": "Check",
@@ -64,29 +56,9 @@
    "label": "Donated At"
   },
   {
-   "fieldname": "total",
-   "fieldtype": "Currency",
-   "label": "Total"
-  },
-  {
-   "fieldname": "currency",
-   "fieldtype": "Data",
-   "label": "Currency"
-  },
-  {
-   "fieldname": "wishlist",
-   "fieldtype": "Data",
-   "label": "Wishlist"
-  },
-  {
    "fieldname": "source",
    "fieldtype": "Data",
    "label": "Source"
-  },
-  {
-   "fieldname": "company",
-   "fieldtype": "Data",
-   "label": "Company"
   },
   {
    "fieldname": "ip_address",
@@ -105,6 +77,74 @@
    "label": "Is Subscription"
   },
   {
+   "fieldname": "local_number",
+   "fieldtype": "Int",
+   "label": "Local Number"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Data",
+   "label": "Currency"
+  },
+  {
+   "fieldname": "tracking_facebook_fbc",
+   "fieldtype": "Data",
+   "label": "Tracking FBC"
+  },
+  {
+   "fieldname": "tracking_facebook_fbp",
+   "fieldtype": "Data",
+   "label": "Tracking FBP"
+  },
+  {
+   "fieldname": "wishlist",
+   "fieldtype": "Data",
+   "label": "Wishlist"
+  },
+  {
+   "fieldname": "local_wishlist",
+   "fieldtype": "Int",
+   "label": "Local Wishlist"
+  },
+  {
+   "fieldname": "local_wishlist_title",
+   "fieldtype": "Data",
+   "label": "Local Wishlist Title"
+  },
+  {
+   "fieldname": "total",
+   "fieldtype": "Currency",
+   "label": "Total"
+  },
+  {
+   "fieldname": "bacs_paid",
+   "fieldtype": "Currency",
+   "label": "Bacs Paid"
+  },
+  {
+   "default": "0",
+   "fieldname": "should_reprocessing",
+   "fieldtype": "Check",
+   "label": "Reprocessing"
+  },
+  {
+   "fieldname": "reprocessing_number",
+   "fieldtype": "Data",
+   "label": "Reprocessing Number"
+  },
+  {
+   "fieldname": "organization",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Organization Details"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Person",
+   "options": "Association Contact Person info"
+  },
+  {
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
@@ -113,10 +153,11 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-29 19:23:15.256918",
+ "modified": "2025-12-10 06:40:40.895902",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Donation",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
