@@ -17,8 +17,7 @@
   "street_number",
   "person_country",
   "person_city",
-  "zip_code",
-  "organization_details"
+  "zip_code"
  ],
  "fields": [
   {
@@ -74,17 +73,11 @@
    "fieldname": "zip_code",
    "fieldtype": "Data",
    "label": "Zip Code"
-  },
-  {
-   "fieldname": "organization_details",
-   "fieldtype": "Link",
-   "label": "Organization",
-   "options": "Organization Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-10 05:51:40.378140",
+ "modified": "2025-12-10 07:55:09.298637",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Association Contact Person info",

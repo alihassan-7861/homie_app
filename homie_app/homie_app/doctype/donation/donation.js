@@ -33,3 +33,6 @@ function update_parent_total(frm) {
     });
     frm.set_value('total', donation_total);
 }
+
+
+
