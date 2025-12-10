@@ -18,7 +18,8 @@
   "organization_street_number",
   "zip_code",
   "organization_email",
-  "organization_contact_no"
+  "organization_contact_no",
+  "bank_details"
  ],
  "fields": [
   {
@@ -77,11 +78,17 @@
    "fieldname": "organization_contact_no",
    "fieldtype": "Data",
    "label": "Contact No"
+  },
+  {
+   "fieldname": "bank_details",
+   "fieldtype": "Link",
+   "label": "IBAN Details",
+   "options": "Bank Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-07 18:31:38.268338",
+ "modified": "2025-12-10 04:27:13.362754",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Organization Details",
