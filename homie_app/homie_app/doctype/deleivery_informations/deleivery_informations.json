@@ -22,6 +22,11 @@
  ],
  "fields": [
   {
+   "fieldname": "order_date",
+   "fieldtype": "Datetime",
+   "label": "Order Date "
+  },
+  {
    "fieldname": "no_of_pallets",
    "fieldtype": "Int",
    "label": "Number of Pallets"
@@ -53,11 +58,6 @@
    "label": "Delivery note"
   },
   {
-   "fieldname": "order_date",
-   "fieldtype": "Datetime",
-   "label": "Order Date "
-  },
-  {
    "fieldname": "column_break_6q8za",
    "fieldtype": "Column Break"
   },
@@ -85,10 +85,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-07 17:57:31.440076",
+ "modified": "2025-12-10 04:22:25.583181",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Deleivery Information",
+ "name": "Deleivery Informations",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
