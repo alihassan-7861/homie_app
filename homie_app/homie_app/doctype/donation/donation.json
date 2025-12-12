@@ -28,7 +28,11 @@
   "should_reprocessing",
   "reprocessing_number",
   "organization",
+  "organization_name",
   "contact_person",
+  "person_first_name",
+  "person_last_name",
+  "person_email",
   "items"
  ],
  "fields": [
@@ -145,15 +149,39 @@
    "options": "Association Contact Person info"
   },
   {
+   "fieldname": "person_first_name",
+   "fieldtype": "Data",
+   "label": "Person First Name",
+   "read_only": 1
+  },
+  {
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
    "options": "Donation Item"
+  },
+  {
+   "fieldname": "person_last_name",
+   "fieldtype": "Data",
+   "label": "Person Last Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "person_email",
+   "fieldtype": "Data",
+   "label": "Person Email",
+   "read_only": 1
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-10 07:56:15.123767",
+ "modified": "2025-12-12 07:15:22.886081",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Donation",
