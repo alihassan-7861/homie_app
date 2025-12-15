@@ -2,37 +2,49 @@ frappe.ui.form.on('Donation Item', {
     product: function(frm, cdt, cdn) {
         let row = frappe.get_doc(cdt, cdn);
 
-        if(row.product) {
-            // Fetch product price from Product Details
-            frappe.db.get_value('Product Details', row.product, 'product_price')
-            .then(r => {
-                let price = r.message.product_price || 0;
-                row.amount = price;
-                row.total = (row.quantity || 0) * row.amount;
-                frm.refresh_field('items');
+        if (!row.product) return;
 
-                // Update parent donation total
-                update_parent_total(frm);
-            });
-        }
+        // Product ID (autoname)
+        frappe.model.set_value(cdt, cdn, 'product_id', row.product);
+
+        // Fetch BOTH name and price
+        frappe.db.get_value(
+            'Product Details',
+            row.product,
+            ['product_name', 'product_price']
+        ).then(r => {
+            if (!r.message) return;
+
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                'product_name',
+                r.message.product_name || ''
+            );
+
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                'amount',
+                r.message.product_price || 0
+            );
+
+            let total = (row.quantity || 0) * (r.message.product_price || 0);
+            frappe.model.set_value(cdt, cdn, 'total', total);
+
+            update_parent_total(frm);
+        });
     },
+
     quantity: function(frm, cdt, cdn) {
         let row = frappe.get_doc(cdt, cdn);
-        row.total = (row.quantity || 0) * (row.amount || 0);
-        frm.refresh_field('items');
+        let total = (row.quantity || 0) * (row.amount || 0);
 
-        // Update parent donation total
+        frappe.model.set_value(cdt, cdn, 'total', total);
         update_parent_total(frm);
     }
 });
 
-function update_parent_total(frm) {
-    let donation_total = 0;
-    frm.doc.items.forEach(function(item) {
-        donation_total += item.total || 0;
-    });
-    frm.set_value('total', donation_total);
-}
 
 
 

@@ -14,7 +14,9 @@
   "food_requirements_dogs",
   "food_requirements_cats",
   "castration_costs_in",
-  "person_details"
+  "person_details",
+  "first_name",
+  "last_name"
  ],
  "fields": [
   {
@@ -57,11 +59,23 @@
    "fieldtype": "Link",
    "label": "Contacted Person Details",
    "options": "Association Contact Person info"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-09 08:13:53.164974",
+ "modified": "2025-12-14 17:37:43.234622",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Person Demands",

@@ -12,13 +12,12 @@
   "deleivery_type",
   "no_of_kilogram",
   "deleivery_date",
+  "column_break_6q8za",
   "arrival_proof",
   "deleivery_note",
-  "column_break_6q8za",
-  "shipping_country",
-  "shipping_city",
-  "shipping_street",
-  "street_number"
+  "person_details",
+  "first_name",
+  "last_name"
  ],
  "fields": [
   {
@@ -62,30 +61,27 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "shipping_country",
-   "fieldtype": "Link",
-   "label": "Shipping Country",
-   "options": "Country"
-  },
-  {
-   "fieldname": "shipping_city",
+   "fieldname": "person_details",
    "fieldtype": "Data",
-   "label": "Shipping City"
+   "label": "Person Details",
+   "options": "Association Contact Person info"
   },
   {
-   "fieldname": "shipping_street",
+   "fieldname": "first_name",
    "fieldtype": "Data",
-   "label": "Shipping Street"
+   "hidden": 1,
+   "label": "First Name"
   },
   {
-   "fieldname": "street_number",
-   "fieldtype": "Int",
-   "label": "Street Number"
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Last Name"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-10 04:22:25.583181",
+ "modified": "2025-12-14 18:08:47.500985",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Deleivery Informations",
