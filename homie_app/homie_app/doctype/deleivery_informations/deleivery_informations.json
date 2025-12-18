@@ -62,7 +62,7 @@
   },
   {
    "fieldname": "person_details",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "label": "Person Details",
    "options": "Association Contact Person info"
   },
@@ -81,7 +81,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-14 18:08:47.500985",
+ "modified": "2025-12-18 05:59:15.026943",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Deleivery Informations",
