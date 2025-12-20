@@ -29,10 +29,13 @@
   "reprocessing_number",
   "organization",
   "organization_name",
+  "donated_to",
   "contact_person",
   "person_first_name",
   "person_last_name",
   "person_email",
+  "shelter_details",
+  "shelter_name",
   "items"
  ],
  "fields": [
@@ -103,6 +106,7 @@
   {
    "fieldname": "wishlist",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Wishlist"
   },
   {
@@ -117,7 +121,8 @@
   },
   {
    "fieldname": "total",
-   "fieldtype": "Currency",
+   "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Total"
   },
   {
@@ -139,18 +144,21 @@
   {
    "fieldname": "organization",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Organization",
    "options": "Organization Details"
   },
   {
    "fieldname": "contact_person",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Person",
-   "options": "Association Contact Person info"
+   "options": "Person Details"
   },
   {
    "fieldname": "person_first_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Person First Name",
    "read_only": 1
   },
@@ -163,25 +171,46 @@
   {
    "fieldname": "person_last_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Person Last Name",
    "read_only": 1
   },
   {
    "fieldname": "person_email",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Person Email",
    "read_only": 1
   },
   {
    "fieldname": "organization_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Organization Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "shelter_details",
+   "fieldtype": "Link",
+   "label": "Shelter Details",
+   "options": "Animal Shelters"
+  },
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "label": "Shelter Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "donated_to",
+   "fieldtype": "Select",
+   "label": "Donated to",
+   "options": "Person\nAnimal Shelter"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-12 07:15:22.886081",
+ "modified": "2025-12-19 21:20:37.217793",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Donation",
@@ -203,5 +232,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "donated_to"
 }

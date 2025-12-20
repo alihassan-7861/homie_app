@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "autoincrement",
+ "autoname": "AND-.#####",
  "creation": "2025-11-20 17:37:46.044514",
  "default_view": "List",
  "doctype": "DocType",
@@ -14,9 +14,12 @@
   "adult_cats",
   "kittens",
   "senior_sick_cats",
+  "source",
   "person_details",
   "first_name",
-  "last_name"
+  "last_name",
+  "shelter_detail",
+  "shelter_name"
  ],
  "fields": [
   {
@@ -61,7 +64,7 @@
    "fieldname": "person_details",
    "fieldtype": "Link",
    "label": "Person Detail",
-   "options": "Association Contact Person info"
+   "options": "Person Details"
   },
   {
    "fieldname": "first_name",
@@ -74,16 +77,33 @@
    "fieldtype": "Data",
    "label": "Last Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "shelter_detail",
+   "fieldtype": "Link",
+   "label": "Shelter Detail",
+   "options": "Animal Shelters"
+  },
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "label": "Shelter Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Person\nAnimal Shelter"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-13 03:23:10.026211",
+ "modified": "2025-12-19 19:26:32.322028",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Animal Information",
- "name_case": "Title Case",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -101,5 +121,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "source"
 }

@@ -10,13 +10,16 @@
   "castration_costs",
   "exemption_notice",
   "notice_issue_date",
-  "animal_shelter_statues",
   "food_requirements_dogs",
   "food_requirements_cats",
   "castration_costs_in",
+  "order_by",
   "person_details",
   "first_name",
-  "last_name"
+  "last_name",
+  "contacted_animal_shelter",
+  "shelter_name",
+  "animal_shelter_statues"
  ],
  "fields": [
   {
@@ -58,7 +61,7 @@
    "fieldname": "person_details",
    "fieldtype": "Link",
    "label": "Contacted Person Details",
-   "options": "Association Contact Person info"
+   "options": "Person Details"
   },
   {
    "fieldname": "first_name",
@@ -71,14 +74,32 @@
    "fieldtype": "Data",
    "label": "Last Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "contacted_animal_shelter",
+   "fieldtype": "Link",
+   "label": "Animal Shelter",
+   "options": "Animal Shelters"
+  },
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "label": "Shelter Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "order_by",
+   "fieldtype": "Select",
+   "label": "Order By",
+   "options": "Person\nAnimal Shelters"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-14 17:37:43.234622",
+ "modified": "2025-12-19 19:12:16.518662",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Person Demands",
+ "name": "Food Demands",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
@@ -97,5 +118,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "order_by"
 }

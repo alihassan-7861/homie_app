@@ -63,10 +63,10 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-13 05:58:13.556733",
+ "modified": "2025-12-19 18:01:22.706361",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Animal Shelter Partners",
+ "name": "Animal Shelters",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
@@ -85,5 +85,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "shelter_name"
 }

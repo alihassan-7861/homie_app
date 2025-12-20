@@ -10,6 +10,7 @@
  "field_order": [
   "first_name",
   "last_name",
+  "full_name",
   "email",
   "contact_no",
   "street",
@@ -73,14 +74,20 @@
    "fieldname": "zip_code",
    "fieldtype": "Data",
    "label": "Zip Code"
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-10 07:55:09.298637",
+ "modified": "2025-12-19 18:28:25.026021",
  "modified_by": "Administrator",
  "module": "Homie App",
- "name": "Association Contact Person info",
+ "name": "Person Details",
  "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
@@ -97,8 +104,9 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "email"
+ "title_field": "full_name"
 }
