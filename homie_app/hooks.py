@@ -213,6 +213,3 @@ app_license = "MIT"
 # 	"homie_app.auth.validate"
 # ]
 
-
-
-

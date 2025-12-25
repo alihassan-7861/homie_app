@@ -10,6 +10,8 @@
   "order_date",
   "no_of_pallets",
   "deleivery_type",
+  "organization_detail",
+  "organization_name",
   "no_of_kilogram",
   "deleivery_date",
   "column_break_6q8za",
@@ -38,7 +40,7 @@
    "fieldname": "deleivery_type",
    "fieldtype": "Select",
    "label": "Deleivery Type",
-   "options": "Own Purchase\nDonated From Homie"
+   "options": "Own Purchase\nDonated From Organization"
   },
   {
    "fieldname": "no_of_kilogram",
@@ -108,11 +110,23 @@
    "in_list_view": 1,
    "label": "Display Title",
    "read_only": 1
+  },
+  {
+   "fieldname": "organization_detail",
+   "fieldtype": "Link",
+   "label": "Organization Detail",
+   "options": "Organization Details"
+  },
+  {
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-19 19:13:03.284691",
+ "modified": "2025-12-24 14:53:01.309905",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Deleivery Informations",
