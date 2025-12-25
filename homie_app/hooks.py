@@ -213,3 +213,6 @@ app_license = "MIT"
 # 	"homie_app.auth.validate"
 # ]
 
+page_js = {
+    "organization-dashboard": "homie_app/pages/organization-dashboard/organization-dashboard.js"
+}
