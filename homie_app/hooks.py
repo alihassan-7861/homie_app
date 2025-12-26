@@ -213,9 +213,10 @@ app_license = "MIT"
 # 	"homie_app.auth.validate"
 # ]
 
-fixtures = [
-    {
-        "dt": "Page",
-        "filters": [["name", "=", "organization-dashboard"]]
-    }
-]
+# File: homie_app/hooks.py
+
+# Add at the top if not present
+from .config.fixtures import fixtures
+
+# Then
+fixtures = fixtures
