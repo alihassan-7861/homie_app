@@ -130,6 +130,17 @@ frappe.pages['organization-dashboard'].on_page_load = function(wrapper) {
                 <div class="kpi-value">${data.kpis.donation_count}</div>
             </div>
 
+
+            <div class="card kpi-card">
+                <div class="kpi-title">👤 Donations to Persons</div>
+                <div class="kpi-value">${data.kpis.donation_to_person_count}</div>
+            </div>
+
+            <div class="card kpi-card">
+                <div class="kpi-title">🐾 Donations to Shelters</div>
+                <div class="kpi-value">${data.kpis.donation_to_shelter_count}</div>
+            </div>
+
             <div class="card kpi-card">
                 <div class="kpi-title">🚚 Deliveries</div>
                 <div class="kpi-value">${data.kpis.delivery_count}</div>

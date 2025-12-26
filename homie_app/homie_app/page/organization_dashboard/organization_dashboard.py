@@ -58,10 +58,20 @@ def get_organization_dashboard(organization):
     # 6️⃣ KPI totals
     total_donated = sum(d.total or 0 for d in donations)
 
+    # ➕ Donation recipient counts (ADDED)
+    donated_to_person = 0
+    donated_to_shelter = 0
+
+    for d in donations:
+        if d.get("donated_to") == "Person":
+            donated_to_person += 1
+        elif d.get("donated_to") == "Animal Shelter":
+            donated_to_shelter += 1
+
     # 7️⃣ Deliveries (show all relevant info)
     deliveries = frappe.get_all(
         "Deleivery Informations",
-        filters={"organization_detail": organization},  # fetch deliveries by this org
+        filters={"organization_detail": organization},
         fields=[
             "name",
             "deleivery_type",
@@ -96,6 +106,8 @@ def get_organization_dashboard(organization):
         "kpis": {
             "total_donated": total_donated,
             "donation_count": len(donations),
+            "donation_to_person_count": donated_to_person,
+            "donation_to_shelter_count": donated_to_shelter,
             "delivery_count": len(deliveries),
         },
         "donations": donations,
