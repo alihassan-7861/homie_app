@@ -12,55 +12,129 @@ frappe.pages['organization-dashboard'].on_page_load = function(wrapper) {
     if (!document.getElementById("org-spinner-style")) {
         const style = document.createElement("style");
         style.id = "org-spinner-style";
-        style.innerHTML = `
-            .spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #3498db;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-                margin: 20px auto;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            .fade {
-                transition: opacity .3s ease;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 10px;
-            }
-            th, td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                font-size: 13px;
-            }
-            th {
-                background: #f7f7f7;
-                text-align: left;
-            }
+       style.innerHTML = `
+/* ================= PAGE BASE ================= */
+.page-body {
+    background: linear-gradient(180deg, #0f172a, #020617);
+    color: #e5e7eb;
+}
 
+/* ================= LOADING SPINNER ================= */
+.spinner {
+    border: 4px solid rgba(255,255,255,0.15);
+    border-top: 4px solid #60a5fa;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    animation: spin 0.9s linear infinite;
+    margin: 40px auto;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
 
-            .kpi-card {
-    text-align: center;
+.fade {
+    transition: opacity 0.35s ease;
+}
+
+/* ================= HEADER ================= */
+#org-header h2 {
+    color: #f8fafc;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+#org-header p {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+/* ================= KPI CARDS ================= */
+#kpis {
+    flex-wrap: wrap;
+}
+
+.kpi-card {
+    background: linear-gradient(145deg, #111827, #0f172a);
+    border: 1px solid #1e293b;
+    border-radius: 14px;
     padding: 16px;
+    min-width: 180px;
+    text-align: center;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.6);
 }
 
 .kpi-title {
-    font-weight: 600;
+    font-size: 13px;
+    color: #cbd5f5;
     margin-bottom: 6px;
+    font-weight: 600;
 }
 
 .kpi-value {
-    font-size: 22px;
-    font-weight: bold;
+    font-size: 24px;
+    font-weight: 700;
+    color: #f8fafc;
 }
 
-        `;
+/* ================= TABLES ================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #0f172a;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+    box-shadow: 0 10px 26px rgba(0,0,0,.45);
+    margin-top: 12px;
+}
+
+/* Table Header */
+thead th {
+    background: linear-gradient(135deg, #1e293b, #020617);
+    color: #e5e7eb;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 12px;
+    border-bottom: 1px solid #1e293b;
+}
+
+/* Rows */
+tbody tr {
+    background: #0f172a;
+    transition: background .2s ease;
+}
+
+tbody tr:hover {
+    background: #020617;
+}
+
+/* Cells */
+td {
+    padding: 12px;
+    font-size: 14px;
+    color: #f1f5f9;
+    border-top: 1px solid #1e293b;
+}
+
+/* Empty text */
+#donations p,
+#deliveries p {
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 20px;
+    text-align: center;
+}
+`;
+
         document.head.appendChild(style);
     }
 
