@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2025-12-26 06:41:12.447346",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-12-26 16:39:35.532393",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "organization-dashboard",
+ "owner": "Administrator",
+ "page_name": "organization-dashboard",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Organization Dashboard"
+}
