@@ -3,7 +3,7 @@ fixtures = [
     {
         "dt": "Page",
         "filters": [
-            ["page_name", "in", ["organization-dashboard"]]
+            ["name", "=", "organization-dashboard"]
         ]
     }
 ]

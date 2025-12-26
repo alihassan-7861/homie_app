@@ -216,7 +216,8 @@ app_license = "MIT"
 # File: homie_app/hooks.py
 
 # Add at the top if not present
-from .config.fixtures import fixtures
+# hooks.py
+from homie_app.config.fixtures import fixtures
 
 # Then
 fixtures = fixtures
