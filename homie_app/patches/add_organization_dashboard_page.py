@@ -8,5 +8,5 @@ def execute():
             "page_name": "organization-dashboard",
             "title": "Organization Dashboard",
             "module": "Homie App",
-            "standard": "Yes"
+            "standard": "No"
         }).insert(ignore_permissions=True)
