@@ -1,2 +1,2 @@
 homie_app.patches.hide_other_modules
-homie_app.homie_app.homie_app.patches.add_organization_dashboard_page
+homie_app.patches.add_organization_dashboard_page
