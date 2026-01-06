@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "AND-.#####",
+ "creation": "2026-01-06 21:14:39.645422",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+    "animal_type",
+    "adult_dogs",
+    "puppies",
+    "senior_sick_dogs",
+    "adult_cats",
+    "kittens",
+    "senior_sick_cats",
+    "source",
+    "person_details",
+    "first_name",
+    "last_name",
+    "shelter_detail",
+    "shelter_name"
+ ],
+ "fields": [
+{
+   "fieldname": "animal_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Animal type",
+   "options": "Cat\nDog",
+   "reqd": 1
+  },
+  {
+   "fieldname": "adult_dogs",
+   "fieldtype": "Int",
+   "label": "Number of Adult Dogs"
+  },
+  {
+   "fieldname": "puppies",
+   "fieldtype": "Int",
+   "label": "Number of Puppies"
+  },
+  {
+   "fieldname": "senior_sick_dogs",
+   "fieldtype": "Int",
+   "label": "Number of Senior Dogs"
+  },
+  {
+   "fieldname": "adult_cats",
+   "fieldtype": "Int",
+   "label": "Number of Adult Cats"
+  },
+  {
+   "fieldname": "kittens",
+   "fieldtype": "Int",
+   "label": "Number of Kittens"
+  },
+  {
+   "fieldname": "senior_sick_cats",
+   "fieldtype": "Int",
+   "label": "Number of Senior Cats"
+  },
+  {
+   "fieldname": "person_details",
+   "fieldtype": "Link",
+   "label": "Person Detail",
+   "options": "Person Details"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shelter_detail",
+   "fieldtype": "Link",
+   "label": "Shelter Detail",
+   "options": "Animal Shelters"
+  },
+  {
+   "fieldname": "shelter_name",
+   "fieldtype": "Data",
+   "label": "Shelter Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Person\nAnimal Shelter"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-06 21:14:39.645422",
+ "modified_by": "Administrator",
+ "module": "Homie App",
+ "name": "Animal Information",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "source"
+
+}
