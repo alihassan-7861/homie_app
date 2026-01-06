@@ -2,7 +2,7 @@
 import frappe
 import json
 import re
-from frappe import _
+from frappe import _, cint
 from frappe.model.naming import now_datetime
 
 
@@ -290,30 +290,33 @@ def delete_organization(name=None, email=None, organization_name=None):
 
 
 # ----------------------------- ANIMAL INFORMATION API'S -----------------------------
-
-
-
 # -----------------------------
 # Helpers
-# -----------------------------
-def validate_person_exists(person_name):
-    """Ensure person_name exists in Association Contact Person info"""
-    if not frappe.db.exists("Association Contact Person info", person_name):
-        frappe.throw(f"Person '{person_name}' does not exist in Association Contact Person info")
+
+
+def _req():
+    return frappe.request.get_json() or {}
 
 def parse_int(value):
-    if value is None or value == "":
+    if value in (None, ""):
         return None
     try:
         return int(value)
     except:
         frappe.throw(f"Invalid number: {value}")
 
+def validate_person(person_name):
+    if person_name and not frappe.db.exists("Person Details", person_name):
+        frappe.throw(f"Person '{person_name}' does not exist in Person Details")
+
+def validate_shelter(shelter_name):
+    if shelter_name and not frappe.db.exists("Animal Shelters", shelter_name):
+        frappe.throw(f"Shelter '{shelter_name}' does not exist")
+
 def fetch_person_details(person_name):
-    """Fetch first_name and last_name from person details"""
     if not person_name:
         return {"first_name": "", "last_name": ""}
-    doc = frappe.get_doc("Association Contact Person info", person_name)
+    doc = frappe.get_doc("Person Details", person_name)
     return {"first_name": doc.first_name, "last_name": doc.last_name}
 
 
@@ -325,57 +328,84 @@ def create_animal():
     require_login()
     data = _req()
 
-    # Required fields
-    person_name = data.get("person_name")
-    if not person_name:
-        frappe.throw("'person_name' is required")
-    validate_person_exists(person_name)
-
+    source = data.get("source")
     animal_type = data.get("animal_type")
-    if not animal_type:
-        frappe.throw("'animal_type' is required")
-    if animal_type not in ("Dog", "Cat"):
-        frappe.throw("'animal_type' must be 'Dog' or 'Cat'")
 
-    # Build doc data
+    if source not in ("Person", "Animal Shelter"):
+        frappe.throw("Source must be 'Person' or 'Animal Shelter'")
+
+    if animal_type not in ("Dog", "Cat"):
+        frappe.throw("Animal Type must be 'Dog' or 'Cat'")
+
     docdata = {
         "doctype": "Animal Information",
-        "animal_type": animal_type,
-        "person_name": person_name,
+        "source": source,
+        "animal_type": animal_type
     }
 
-    # Set type-specific fields
+    # -------------------- SOURCE TOGGLE --------------------
+    if source == "Person":
+        person = data.get("person_details")
+        if not person:
+            frappe.throw("Person Details is required")
+
+        validate_person(person)
+        p = frappe.get_doc("Person Details", person)
+
+        docdata.update({
+            "person_details": person,
+            "first_name": p.first_name,
+            "last_name": p.last_name,
+            "shelter_detail": None,
+            "shelter_name": ""
+        })
+
+    else:
+        shelter = data.get("shelter_detail")
+        if not shelter:
+            frappe.throw("Shelter Detail is required")
+
+        validate_shelter(shelter)
+        s = frappe.get_doc("Animal Shelters", shelter)
+
+        docdata.update({
+            "shelter_detail": shelter,
+            "shelter_name": s.shelter_name,
+            "person_details": None,
+            "first_name": "",
+            "last_name": ""
+        })
+
+    # -------------------- ANIMAL TYPE --------------------
     if animal_type == "Dog":
         docdata.update({
             "adult_dogs": parse_int(data.get("adult_dogs")),
             "puppies": parse_int(data.get("puppies")),
-            "senior_sick_dogs": parse_int(data.get("senior_sick_dogs"))
+            "senior_sick_dogs": parse_int(data.get("senior_sick_dogs")),
+            "adult_cats": None,
+            "kittens": None,
+            "senior_sick_cats": None
         })
-        if any([data.get("adult_cats"), data.get("kittens"), data.get("senior_sick_cats")]):
-            frappe.throw("You cannot submit Cat fields when animal_type is 'Dog'")
-
-    if animal_type == "Cat":
+    else:
         docdata.update({
             "adult_cats": parse_int(data.get("adult_cats")),
             "kittens": parse_int(data.get("kittens")),
-            "senior_sick_cats": parse_int(data.get("senior_sick_cats"))
+            "senior_sick_cats": parse_int(data.get("senior_sick_cats")),
+            "adult_dogs": None,
+            "puppies": None,
+            "senior_sick_dogs": None
         })
-        if any([data.get("adult_dogs"), data.get("puppies"), data.get("senior_sick_dogs")]):
-            frappe.throw("You cannot submit Dog fields when animal_type is 'Cat'")
 
-    # Insert record
     doc = frappe.get_doc(docdata)
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
 
-    person_info = fetch_person_details(person_name)
-    result = doc.as_dict()
-    result.update(person_info)
+    display = f"{doc.first_name} {doc.last_name}".strip() or doc.shelter_name
 
     return {
         "status": "success",
-        "message": f"Animal information for '{person_name}' created successfully.",
-        "animal": result
+        "message": f"🐾 Animal information for '{display}' created successfully.",
+        "animal": doc.as_dict()
     }
 
 
@@ -388,71 +418,56 @@ def get_all_animals():
 
     animals = frappe.get_all(
         "Animal Information",
-        fields=["name", "animal_type", "person_name", "modified"],
+        fields=[
+            "name", "animal_type", "source",
+            "person_details", "first_name", "last_name",
+            "shelter_detail", "shelter_name", "modified"
+        ],
         order_by="modified desc"
     )
 
-    result = []
     for a in animals:
-        doc = frappe.get_doc("Animal Information", a["name"])
-        person_info = fetch_person_details(doc.person_name)
-        doc_dict = doc.as_dict()
-        doc_dict.update(person_info)
-        result.append(doc_dict)
+        a["display_name"] = a["first_name"] + " " + a["last_name"] if a["source"] == "Person" else a["shelter_name"]
 
     return {
         "status": "success",
-        "count": len(result),
+        "count": len(animals),
         "message": "Animal records fetched successfully.",
-        "data": result
+        "data": animals
     }
 
 
 # -----------------------------
-# READ ONE ANIMAL
+# READ SINGLE ANIMAL
 # -----------------------------
 @frappe.whitelist()
-def get_animal(name=None, person_name=None, first_name=None, email=None):
+def get_animal(name=None, person_details=None, shelter_detail=None):
     require_login()
+    if not any([name, person_details, shelter_detail]):
+        frappe.throw("Provide at least one identifier: name, person_details, or shelter_detail")
 
-    if not any([name, person_name, first_name, email]):
-        frappe.throw("Provide at least one identifier: name, person_name, first_name, or email")
-
-    # Determine which identifier to use
     if name:
+        if not frappe.db.exists("Animal Information", name):
+            frappe.throw(f"Animal record '{name}' not found")
         doc = frappe.get_doc("Animal Information", name)
-    elif person_name:
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_name}, limit_page_length=1)
+    elif person_details:
+        docs = frappe.get_all("Animal Information", filters={"person_details": person_details}, limit_page_length=1)
         if not docs:
-            frappe.throw(f"Animal not found for person_name '{person_name}'")
+            frappe.throw(f"No animal record found for the given person_details")
         doc = frappe.get_doc("Animal Information", docs[0].name)
-    elif first_name:
-        person_docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with first_name '{first_name}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
+    else:
+        docs = frappe.get_all("Animal Information", filters={"shelter_detail": shelter_detail}, limit_page_length=1)
         if not docs:
-            frappe.throw(f"Animal not found for first_name '{first_name}'")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-    else:  # email
-        person_docs = frappe.get_all("Association Contact Person info", filters={"email": email}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with email '{email}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
-        if not docs:
-            frappe.throw(f"Animal not found for email '{email}'")
+            frappe.throw(f"No animal record found for the given shelter_detail")
         doc = frappe.get_doc("Animal Information", docs[0].name)
 
-    person_info = fetch_person_details(doc.person_name)
-    doc_dict = doc.as_dict()
-    doc_dict.update(person_info)
+    display_name = doc.first_name + " " + doc.last_name if doc.source == "Person" else doc.shelter_name
 
     return {
         "status": "success",
-        "message": f"Animal information fetched successfully for '{doc.person_name}'.",
-        "animal": doc_dict
+        "message": f"Animal information fetched successfully for '{display_name}'.",
+        "animal": doc.as_dict()
     }
-
 
 
 # -----------------------------
@@ -463,80 +478,70 @@ def update_animal():
     require_login()
     data = _req()
 
-    # Fetch identifier
     name = data.get("name")
-    person_name_lookup = data.get("person_name_lookup")
-    first_name = data.get("first_name")
-    email = data.get("email")
+    if not name:
+        frappe.throw("Animal record name is required")
 
-    if not any([name, person_name_lookup, first_name, email]):
-        frappe.throw("Provide at least one identifier: name, person_name_lookup, first_name, or email")
+    doc = frappe.get_doc("Animal Information", name)
 
-    # Determine which identifier to use
-    if name:
-        doc = frappe.get_doc("Animal Information", name)
-    elif person_name_lookup:
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_name_lookup}, limit_page_length=1)
-        if not docs:
-            frappe.throw("Animal not found for the given person_name_lookup")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-    elif first_name:
-        # Join with person_details table to get person_name
-        person_docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with first_name '{first_name}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
-        if not docs:
-            frappe.throw("Animal not found for the given first_name")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-    else:  # email
-        person_docs = frappe.get_all("Association Contact Person info", filters={"email": email}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with email '{email}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
-        if not docs:
-            frappe.throw("Animal not found for the given email")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
+    source = data.get("source", doc.source)
+    animal_type = data.get("animal_type", doc.animal_type)
 
-    current_type = doc.animal_type
-    new_type = data.get("animal_type", current_type)
+    if source not in ("Person", "Animal Shelter"):
+        frappe.throw("Invalid source value")
 
-    if new_type not in ("Dog", "Cat"):
-        frappe.throw("Invalid animal_type. Allowed: Dog, Cat")
+    if animal_type not in ("Dog", "Cat"):
+        frappe.throw("Invalid animal type")
 
-    # Validate person_name if updated
-    if data.get("person_name"):
-        validate_person_exists(data.get("person_name"))
+    doc.db_set("source", source)
+    doc.db_set("animal_type", animal_type)
 
-    # Type-specific validation
-    if new_type == "Dog" and any([data.get("adult_cats"), data.get("kittens"), data.get("senior_sick_cats")]):
-        frappe.throw("Cannot update Cat fields when animal_type is Dog")
-    if new_type == "Cat" and any([data.get("adult_dogs"), data.get("puppies"), data.get("senior_sick_dogs")]):
-        frappe.throw("Cannot update Dog fields when animal_type is Cat")
+    # -------------------- SOURCE TOGGLE --------------------
+    if source == "Person":
+        person = data.get("person_details", doc.person_details)
+        validate_person(person)
+        p = frappe.get_doc("Person Details", person)
 
-    # Update allowed fields
-    update_fields = [
-        "animal_type",
-        "adult_dogs", "puppies", "senior_sick_dogs",
-        "adult_cats", "kittens", "senior_sick_cats",
-        "person_name"
-    ]
-    for f in update_fields:
-        if data.get(f) is not None:
-            value = parse_int(data.get(f)) if f in (
-                "adult_dogs", "puppies", "senior_sick_dogs",
-                "adult_cats", "kittens", "senior_sick_cats"
-            ) else data.get(f)
-            doc.db_set(f, value, update_modified=True)
+        doc.db_set("person_details", person)
+        doc.db_set("first_name", p.first_name)
+        doc.db_set("last_name", p.last_name)
+        doc.db_set("shelter_detail", None)
+        doc.db_set("shelter_name", "")
 
-    person_info = fetch_person_details(doc.person_name)
-    doc_dict = doc.as_dict()
-    doc_dict.update(person_info)
+    else:
+        shelter = data.get("shelter_detail", doc.shelter_detail)
+        validate_shelter(shelter)
+        s = frappe.get_doc("Animal Shelters", shelter)
+
+        doc.db_set("shelter_detail", shelter)
+        doc.db_set("shelter_name", s.shelter_name)
+        doc.db_set("person_details", None)
+        doc.db_set("first_name", "")
+        doc.db_set("last_name", "")
+
+    # -------------------- ANIMAL TYPE --------------------
+    if animal_type == "Dog":
+        doc.db_set("adult_dogs", parse_int(data.get("adult_dogs")))
+        doc.db_set("puppies", parse_int(data.get("puppies")))
+        doc.db_set("senior_sick_dogs", parse_int(data.get("senior_sick_dogs")))
+        doc.db_set("adult_cats", None)
+        doc.db_set("kittens", None)
+        doc.db_set("senior_sick_cats", None)
+
+    else:
+        doc.db_set("adult_cats", parse_int(data.get("adult_cats")))
+        doc.db_set("kittens", parse_int(data.get("kittens")))
+        doc.db_set("senior_sick_cats", parse_int(data.get("senior_sick_cats")))
+        doc.db_set("adult_dogs", None)
+        doc.db_set("puppies", None)
+        doc.db_set("senior_sick_dogs", None)
+
+    frappe.db.commit()
 
     return {
         "status": "success",
-        "message": f"Animal information for '{doc.person_name}' updated successfully.",
-        "animal": doc_dict
+        "message": f"✨ Animal information '{doc.name}' updated successfully.",
+        "animal": doc.as_dict()
     }
 
 
@@ -545,44 +550,18 @@ def update_animal():
 # DELETE ANIMAL
 # -----------------------------
 @frappe.whitelist()
-def delete_animal(name=None, person_name=None, first_name=None, email=None):
+def delete_animal(name=None):
     require_login()
-
-    if not any([name, person_name, first_name, email]):
-        frappe.throw("Provide at least one identifier for deletion: name, person_name, first_name, or email")
-
-    # Determine which identifier to use
-    if name:
-        doc = frappe.get_doc("Animal Information", name)
-    elif person_name:
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_name}, limit_page_length=1)
-        if not docs:
-            frappe.throw(f"Animal not found for person_name '{person_name}'")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-    elif first_name:
-        person_docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with first_name '{first_name}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
-        if not docs:
-            frappe.throw(f"Animal not found for first_name '{first_name}'")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-    else:  # email
-        person_docs = frappe.get_all("Association Contact Person info", filters={"email": email}, fields=["name"])
-        if not person_docs:
-            frappe.throw(f"No person found with email '{email}'")
-        docs = frappe.get_all("Animal Information", filters={"person_name": person_docs[0].name}, limit_page_length=1)
-        if not docs:
-            frappe.throw(f"Animal not found for email '{email}'")
-        doc = frappe.get_doc("Animal Information", docs[0].name)
-
-    doc_name = doc.name
+    if not name:
+        frappe.throw("Provide 'name' of the animal record to delete")
+    if not frappe.db.exists("Animal Information", name):
+        frappe.throw(f"Animal record '{name}' not found")
+    doc = frappe.get_doc("Animal Information", name)
     doc.delete(ignore_permissions=True)
     frappe.db.commit()
-
     return {
         "status": "success",
-        "message": f"Animal information record '{doc_name}' deleted successfully."
+        "message": f"Animal information record '{name}' has been deleted successfully."
     }
 
 
@@ -596,21 +575,21 @@ def create_person():
     require_login()
     data = _req()
 
-    required_fields = ["first_name", "last_name", "email", "contact_no"]
-    for f in required_fields:
+    required = ["first_name", "last_name", "email", "contact_no"]
+    for f in required:
         if not data.get(f):
-            frappe.throw(f"'{f}' is required.")
+            frappe.throw(f"'{f}' is required")
 
     validate_email(data["email"])
 
-    if frappe.db.exists("Association Contact Person info", data["email"]):
-        frappe.throw(f"A record with email '{data['email']}' already exists.")
+    if frappe.db.exists("Person Details", {"email": data["email"]}):
+        frappe.throw(f"Person with email '{data['email']}' already exists")
 
     doc = frappe.get_doc({
-        "doctype": "Association Contact Person info",
+        "doctype": "Person Details",
         "first_name": data["first_name"],
         "last_name": data["last_name"],
-        "email": data["email"],  # unique name
+        "email": data["email"],
         "contact_no": data["contact_no"],
         "street": data.get("street"),
         "street_number": data.get("street_number"),
@@ -618,6 +597,7 @@ def create_person():
         "person_city": data.get("person_city"),
         "zip_code": data.get("zip_code")
     })
+
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
 
@@ -625,30 +605,71 @@ def create_person():
             "message": f"Person Details for '{doc.first_name}' created successfully.",
             "data": doc.as_dict()}
 
-
 # -----------------------------
 # READ PERSON
 # -----------------------------
 @frappe.whitelist()
-def get_person(email=None, first_name=None, last_name=None):
+def get_person(name=None, email=None, first_name=None):
     require_login()
 
-    if not any([email, first_name, last_name]):
-        frappe.throw("Provide at least one identifier: email, first_name, or last_name")
+    # -----------------------------
+    # VALIDATION: at least one input
+    # -----------------------------
+    if not any([name, email, first_name]):
+        frappe.throw(
+            "Please provide at least one identifier: name, email, or first name."
+        )
 
-    if email:
+    # -----------------------------
+    # FIND PERSON NAME
+    # -----------------------------
+    person_name = None
+
+    if name:
+        if not frappe.db.exists("Person Details", name):
+            frappe.throw(f"No person found with name '{name}'.")
+        person_name = name
+
+    elif email:
         validate_email(email)
-        docs = frappe.get_all("Association Contact Person info", filters={"email": email}, limit_page_length=1)
-    elif first_name:
-        docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name}, limit_page_length=1)
-    else:
-        docs = frappe.get_all("Association Contact Person info", filters={"last_name": last_name}, limit_page_length=1)
+        person_name = frappe.db.get_value(
+            "Person Details",
+            {"email": email},
+            "name"
+        )
+        if not person_name:
+            frappe.throw(f"No person found with email '{email}'.")
 
-    if not docs:
-        frappe.throw("Contact person not found")
+    else:  # first_name
+        matches = frappe.get_all(
+            "Person Details",
+            filters={"first_name": first_name},
+            fields=["name", "full_name"],
+            limit_page_length=2
+        )
 
-    doc = frappe.get_doc("Association Contact Person info", docs[0].email)
-    return {"status": "success", "data": doc.as_dict()}
+        if not matches:
+            frappe.throw(f"No person found with first name '{first_name}'.")
+
+        if len(matches) > 1:
+            frappe.throw(
+                f"Multiple persons found with first name '{first_name}'. "
+                "Please search using email or name instead."
+            )
+
+        person_name = matches[0]["name"]
+
+    # -----------------------------
+    # FETCH DOCUMENT
+    # -----------------------------
+    doc = frappe.get_doc("Person Details", person_name)
+
+    return {
+        "status": "success",
+        "message": f"Person '{doc.full_name}' fetched successfully.",
+        "data": doc.as_dict()
+    }
+
 
 
 
@@ -659,12 +680,12 @@ def get_person(email=None, first_name=None, last_name=None):
 def get_all_persons():
     require_login()
     records = frappe.get_all(
-        "Association Contact Person info",
+        "Person Details",
         fields=["email", "first_name", "last_name", "contact_no", "street", "street_number", "person_country", "person_city", "zip_code", "modified"],
         order_by="modified desc"
     )
 
-    result = [frappe.get_doc("Association Contact Person info", r["email"]).as_dict() for r in records]
+    result = [frappe.get_doc("Person Details", r["email"]).as_dict() for r in records]
 
     return {"status": "success", "count": len(result), "data": result}
 
@@ -677,63 +698,155 @@ def update_person():
     require_login()
     data = _req()
 
-    email_lookup = data.get("email")  # unique identifier
-    first_name_lookup = data.get("first_name_lookup")
-    last_name_lookup = data.get("last_name_lookup")
+    name = data.get("name")
+    email = data.get("email")
+    first_name = data.get("first_name_lookup")
 
-    if not any([email_lookup, first_name_lookup, last_name_lookup]):
-        frappe.throw("Provide at least one identifier for update: email, first_name_lookup, or last_name_lookup")
+    # -----------------------------
+    # VALIDATION: identifier
+    # -----------------------------
+    if not any([name, email, first_name]):
+        frappe.throw(
+            "Please provide at least one identifier: name, email, or first name."
+        )
 
-    # Fetch record
-    if email_lookup:
-        validate_email(email_lookup)
-        docs = frappe.get_all("Association Contact Person info", filters={"email": email_lookup}, limit_page_length=1)
-    elif first_name_lookup:
-        docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name_lookup}, limit_page_length=1)
-    else:
-        docs = frappe.get_all("Association Contact Person info", filters={"last_name": last_name_lookup}, limit_page_length=1)
+    # -----------------------------
+    # RESOLVE PERSON NAME
+    # -----------------------------
+    person_name = None
 
-    if not docs:
-        frappe.throw("Contact person not found")
+    if name:
+        if not frappe.db.exists("Person Details", name):
+            frappe.throw(f"No person found with name '{name}'.")
+        person_name = name
 
-    doc = frappe.get_doc("Association Contact Person info", docs[0].email)
+    elif email:
+        validate_email(email)
+        person_name = frappe.db.get_value(
+            "Person Details",
+            {"email": email},
+            "name"
+        )
+        if not person_name:
+            frappe.throw(f"No person found with email '{email}'.")
 
-    allowed_fields = ["first_name", "last_name", "contact_no", "street", "street_number", "person_country", "person_city", "zip_code"]
-    for f in allowed_fields:
-        if f in data and data.get(f) is not None:
-            doc.db_set(f, data.get(f), update_modified=True)
+    else:  # first_name
+        matches = frappe.get_all(
+            "Person Details",
+            filters={"first_name": first_name},
+            fields=["name"],
+            limit_page_length=2
+        )
 
-    return {"status": "success", 
-            "message": f"Person Details for '{doc.first_name}' updated successfully.",
-            "data": doc.as_dict()}
+        if not matches:
+            frappe.throw(f"No person found with first name '{first_name}'.")
+
+        if len(matches) > 1:
+            frappe.throw(
+                f"Multiple persons found with first name '{first_name}'. "
+                "Please use email or name instead."
+            )
+
+        person_name = matches[0]["name"]
+
+    # -----------------------------
+    # UPDATE DOCUMENT
+    # -----------------------------
+    doc = frappe.get_doc("Person Details", person_name)
+
+    updatable_fields = [
+        "first_name", "last_name", "contact_no",
+        "street", "street_number",
+        "person_country", "person_city", "zip_code"
+    ]
+
+    updated = False
+    for field in updatable_fields:
+        if field in data:
+            doc.set(field, data.get(field))
+            updated = True
+
+    if not updated:
+        frappe.throw("No valid fields provided to update.")
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Person '{doc.full_name}' updated successfully.",
+        "data": doc.as_dict()
+    }
+
 
 
 # -----------------------------
 # DELETE PERSON
 # -----------------------------
 @frappe.whitelist()
-def delete_person(email=None, first_name=None, last_name=None):
+def delete_person(name=None, email=None, first_name=None):
     require_login()
 
-    if not any([email, first_name, last_name]):
-        frappe.throw("Provide at least one identifier for deletion: email, first_name, or last_name")
+    # -----------------------------
+    # VALIDATION: identifier
+    # -----------------------------
+    if not any([name, email, first_name]):
+        frappe.throw(
+            "Please provide at least one identifier: name, email, or first name."
+        )
 
-    if email:
+    # -----------------------------
+    # RESOLVE PERSON NAME
+    # -----------------------------
+    person_name = None
+
+    if name:
+        if not frappe.db.exists("Person Details", name):
+            frappe.throw(f"No person found with name '{name}'.")
+        person_name = name
+
+    elif email:
         validate_email(email)
-        docs = frappe.get_all("Association Contact Person info", filters={"email": email}, limit_page_length=1)
-    elif first_name:
-        docs = frappe.get_all("Association Contact Person info", filters={"first_name": first_name}, limit_page_length=1)
-    else:
-        docs = frappe.get_all("Association Contact Person info", filters={"last_name": last_name}, limit_page_length=1)
+        person_name = frappe.db.get_value(
+            "Person Details",
+            {"email": email},
+            "name"
+        )
+        if not person_name:
+            frappe.throw(f"No person found with email '{email}'.")
 
-    if not docs:
-        frappe.throw("Contact person not found")
+    else:  # first_name
+        matches = frappe.get_all(
+            "Person Details",
+            filters={"first_name": first_name},
+            fields=["name", "full_name"],
+            limit_page_length=2
+        )
 
-    doc = frappe.get_doc("Association Contact Person info", docs[0].email)
+        if not matches:
+            frappe.throw(f"No person found with first name '{first_name}'.")
+
+        if len(matches) > 1:
+            frappe.throw(
+                f"Multiple persons found with first name '{first_name}'. "
+                "Please use email or name instead."
+            )
+
+        person_name = matches[0]["name"]
+
+    # -----------------------------
+    # DELETE DOCUMENT
+    # -----------------------------
+    doc = frappe.get_doc("Person Details", person_name)
+    person_full_name = doc.full_name
+
     doc.delete(ignore_permissions=True)
     frappe.db.commit()
 
-    return {"status": "success", "message": f"Contact person '{doc.first_name}' deleted successfully."}
+    return {
+        "status": "success",
+        "message": f"Person '{person_full_name}' deleted successfully."
+    }
 
 
 
@@ -743,7 +856,7 @@ def delete_person(email=None, first_name=None, last_name=None):
 
 def validate_contact_person(name):
     """Ensure linked Contact Person exists"""
-    if name and not frappe.db.exists("Association Contact Person info", name):
+    if name and not frappe.db.exists("Person Details", name):
         frappe.throw(f"Contact person '{name}' does not exist.")
 
 
@@ -752,7 +865,6 @@ def validate_contact_person(name):
 # -----------------------------
 # CREATE
 # -----------------------------
-@frappe.whitelist()
 @frappe.whitelist()
 def create_shelter():
     require_login()
@@ -771,7 +883,7 @@ def create_shelter():
         frappe.throw("'truck_access' must be 'Yes' or 'No'.")
 
     docdata = {
-        "doctype": "Animal Shelter Partners",
+        "doctype": "Animal Shelters",
         "shelter_name": data.get("shelter_name"),
         "forklift": int(data.get("forklift", 0)),
         "truck_access": data.get("truck_access", "No"),
@@ -806,11 +918,11 @@ def get_shelter(shelter_name=None, name=None):
     if name:
         filters["name"] = name
 
-    docs = frappe.get_all("Animal Shelter Partners", filters=filters, limit_page_length=1)
+    docs = frappe.get_all("Animal Shelters", filters=filters, limit_page_length=1)
     if not docs:
         frappe.throw("Shelter not found with the provided identifier.")
 
-    doc = frappe.get_doc("Animal Shelter Partners", docs[0].name)
+    doc = frappe.get_doc("Animal Shelters", docs[0].name)
     return {
         "status": "success",
         "message": f"Shelter '{doc.shelter_name}' details retrieved successfully!",
@@ -829,12 +941,12 @@ def get_all_shelters():
     require_login()
 
     records = frappe.get_all(
-        "Animal Shelter Partners",
+        "Animal Shelters",
         fields=["name", "shelter_name", "country", "city", "truck_access", "modified"],
         order_by="modified desc"
     )
 
-    result = [frappe.get_doc("Animal Shelter Partners", r["name"]).as_dict() for r in records]
+    result = [frappe.get_doc("Animal Shelters", r["name"]).as_dict() for r in records]
 
     return {
         "status": "success",
@@ -861,11 +973,11 @@ def update_shelter():
     if data.get("name"):
         filters["name"] = data.get("name")
 
-    docs = frappe.get_all("Animal Shelter Partners", filters=filters, limit_page_length=1)
+    docs = frappe.get_all("Animal Shelters", filters=filters, limit_page_length=1)
     if not docs:
         frappe.throw("Shelter not found.")
 
-    doc = frappe.get_doc("Animal Shelter Partners", docs[0].name)
+    doc = frappe.get_doc("Animal Shelters", docs[0].name)
 
     # Validate forklift
     if "forklift" in data and data["forklift"] not in (0, 1, "0", "1"):
@@ -909,11 +1021,11 @@ def delete_shelter(shelter_name=None, name=None):
     if name:
         filters["name"] = name
 
-    docs = frappe.get_all("Animal Shelter Partners", filters=filters, limit_page_length=1)
+    docs = frappe.get_all("Animal Shelters", filters=filters, limit_page_length=1)
     if not docs:
         frappe.throw("Shelter not found.")
 
-    doc = frappe.get_doc("Animal Shelter Partners", docs[0].name)
+    doc = frappe.get_doc("Animal Shelters", docs[0].name)
     doc_name = doc.shelter_name
     doc.delete(ignore_permissions=True)
     frappe.db.commit()
@@ -924,50 +1036,104 @@ def delete_shelter(shelter_name=None, name=None):
     }
 
 
+# ----------------------------- FOOD DEMAND APIs  -----------------------------
 
+import frappe
+from frappe import _
+from frappe.utils import flt
 
-
-
-
-# ----------------------------- PERSON DEMANDS API'S -----------------------------
-
+# -----------------------------
+# HELPERS
+# -----------------------------
+def _req():
+    return frappe.request.get_json() or {}
 
 def parse_float(value):
-    if value is None or value == "":
+    if value in (None, ""):
         return None
     try:
-        return float(value)
-    except:
+        return flt(value)
+    except Exception:
         frappe.throw(f"Invalid currency value: {value}")
 
 def validate_person(person_name):
-    """Ensure linked Contact Person exists."""
-    if person_name and not frappe.db.exists("Association Contact Person info", person_name):
+    if person_name and not frappe.db.exists("Person Details", person_name):
         frappe.throw(f"Person '{person_name}' does not exist.")
 
+def validate_shelter(shelter_name):
+    if shelter_name and not frappe.db.exists("Animal Shelters", shelter_name):
+        frappe.throw(f"Shelter '{shelter_name}' does not exist.")
 
 # -----------------------------
-# CREATE
+# CREATE FOOD DEMAND
 # -----------------------------
-
 @frappe.whitelist()
-def create_person_demand():
+def create_food_demand():
     require_login()
     data = _req()
 
-    if data.get("person_details"):
-        validate_person(data.get("person_details"))
+    # -----------------------------
+    # Validate dropdown
+    # -----------------------------
+    order_by = data.get("order_by")
+    if order_by not in ("Person", "Animal Shelters"):
+        frappe.throw("'order_by' must be either 'Person' or 'Animal Shelters'.")
 
+    # -----------------------------
+    # Conditional required fields
+    # -----------------------------
+    if order_by == "Person" and not data.get("person_details"):
+        frappe.throw("Person Details is required when order_by is 'Person'.")
+    if order_by == "Animal Shelters" and not data.get("contacted_animal_shelter"):
+        frappe.throw("Animal Shelter is required when order_by is 'Animal Shelters'.")
+
+    # -----------------------------
+    # Auto-fill linked data
+    # -----------------------------
+    person_details = data.get("person_details")
+    contacted_animal_shelter = data.get("contacted_animal_shelter")
+
+    # Person info
+    if person_details:
+        validate_person(person_details)
+        person = frappe.get_doc("Person Details", person_details)
+        first_name = person.first_name or ""
+        last_name = person.last_name or ""
+    else:
+        first_name = ""
+        last_name = ""
+
+    # Shelter info
+    if contacted_animal_shelter:
+        validate_shelter(contacted_animal_shelter)
+        shelter_name = (
+            frappe.db.get_value("Animal Shelters", contacted_animal_shelter, "shelter_name")
+            or contacted_animal_shelter
+        )
+    else:
+        shelter_name = ""
+
+    # -----------------------------
+    # Create document
+    # -----------------------------
     doc = frappe.get_doc({
-        "doctype": "Person Demands",
+        "doctype": "Food Demands",
+        "order_by": order_by,
+
+        "person_details": person_details,
+        "first_name": first_name,
+        "last_name": last_name,
+
+        "contacted_animal_shelter": contacted_animal_shelter,
+        "shelter_name": shelter_name,
+
         "castration_costs": parse_float(data.get("castration_costs")),
+        "castration_costs_in": parse_float(data.get("castration_costs_in")),
         "exemption_notice": data.get("exemption_notice"),
         "notice_issue_date": data.get("notice_issue_date"),
-        "animal_shelter_statues": data.get("animal_shelter_statues"),
         "food_requirements_dogs": data.get("food_requirements_dogs"),
         "food_requirements_cats": data.get("food_requirements_cats"),
-        "castration_costs_in": parse_float(data.get("castration_costs_in")),
-        "person_details": data.get("person_details"),
+        "animal_shelter_statues": data.get("animal_shelter_statues"),
     })
 
     doc.insert(ignore_permissions=True)
@@ -975,224 +1141,307 @@ def create_person_demand():
 
     return {
         "status": "success",
-        "message": f"Person demand record '{doc.name}' created successfully.",
+        "message": f"✅ Food demand '{doc.name}' created successfully.",
         "data": doc.as_dict()
     }
 
-
-
 # -----------------------------
-# READ
+# READ SINGLE
 # -----------------------------
-
 @frappe.whitelist()
-def get_person_demand(name=None):
+def get_food_demand(name=None):
     require_login()
     if not name:
-        frappe.throw("'name' (DEM-xxxxxx) is required.")
+        frappe.throw("'name' (DEM-.######) is required.")
 
-    try:
-        doc = frappe.get_doc("Person Demands", name)
-    except frappe.DoesNotExistError:
-        frappe.throw("Person demand record not found.")
+    if not frappe.db.exists("Food Demands", name):
+        frappe.throw("Food demand record not found.")
+
+    doc = frappe.get_doc("Food Demands", name)
 
     return {
         "status": "success",
-        "message": f"Person demand '{name}' fetched successfully.",
+        "message": f"📦 Food demand '{name}' fetched successfully.",
         "data": doc.as_dict()
     }
 
 # -----------------------------
 # READ ALL
 # -----------------------------
-
 @frappe.whitelist()
-def get_all_person_demands():
+def get_all_food_demands():
     require_login()
 
     records = frappe.get_all(
-        "Person Demands",
+        "Food Demands",
         fields=["name"],
         order_by="modified desc"
     )
 
-    data = [frappe.get_doc("Person Demands", r.name).as_dict() for r in records]
+    data = [frappe.get_doc("Food Demands", r.name).as_dict() for r in records]
 
     return {
         "status": "success",
         "count": len(data),
+        "message": f"📋 {len(data)} food demand records retrieved successfully.",
         "data": data
     }
 
-
 # -----------------------------
-# UPDATE
+# UPDATE FOOD DEMAND
 # -----------------------------
-
 @frappe.whitelist()
-def update_person_demand():
+def update_food_demand():
     require_login()
     data = _req()
 
-    if not data.get("name"):
-        frappe.throw("'name' (DEM-xxxxxx) is required for update.")
+    name = data.get("name")
+    if not name:
+        frappe.throw("'name' (DEM-.######) is required for update.")
 
-    try:
-        doc = frappe.get_doc("Person Demands", data.get("name"))
-    except frappe.DoesNotExistError:
-        frappe.throw("Person demand record not found.")
+    if not frappe.db.exists("Food Demands", name):
+        frappe.throw("Food demand record not found.")
 
-    if data.get("person_details"):
-        validate_person(data.get("person_details"))
+    doc = frappe.get_doc("Food Demands", name)
 
-    fields = [
-        "castration_costs",
+    # -----------------------------
+    # Validate dropdown
+    # -----------------------------
+    order_by = data.get("order_by") or doc.order_by
+    if order_by not in ("Person", "Animal Shelters"):
+        frappe.throw("'order_by' must be either 'Person' or 'Animal Shelters'.")
+
+    # -----------------------------
+    # Conditional required fields
+    # -----------------------------
+    if order_by == "Person" and not (data.get("person_details") or doc.person_details):
+        frappe.throw("Person Details is required when order_by is 'Person'.")
+    if order_by == "Animal Shelters" and not (data.get("contacted_animal_shelter") or doc.contacted_animal_shelter):
+        frappe.throw("Animal Shelter is required when order_by is 'Animal Shelters'.")
+
+    # -----------------------------
+    # Auto-fill & validate links
+    # -----------------------------
+    person_details = data.get("person_details") or doc.person_details
+    contacted_animal_shelter = data.get("contacted_animal_shelter") or doc.contacted_animal_shelter
+
+    if person_details:
+        validate_person(person_details)
+        person = frappe.get_doc("Person Details", person_details)
+        doc.first_name = person.first_name or ""
+        doc.last_name = person.last_name or ""
+    else:
+        doc.first_name = ""
+        doc.last_name = ""
+
+    if contacted_animal_shelter:
+        validate_shelter(contacted_animal_shelter)
+        doc.shelter_name = (
+            frappe.db.get_value("Animal Shelters", contacted_animal_shelter, "shelter_name")
+            or contacted_animal_shelter
+        )
+    else:
+        doc.shelter_name = ""
+
+    # -----------------------------
+    # Update fields
+    # -----------------------------
+    update_fields = [
+        "order_by",
+        "person_details",
+        "contacted_animal_shelter",
         "exemption_notice",
         "notice_issue_date",
-        "animal_shelter_statues",
         "food_requirements_dogs",
         "food_requirements_cats",
+        "animal_shelter_statues",
+        "castration_costs",
         "castration_costs_in",
-        "person_details",
     ]
 
-    for f in fields:
-        if data.get(f) is not None:
-            value = parse_float(data.get(f)) if f in ["castration_costs", "castration_costs_in"] else data.get(f)
-            doc.db_set(f, value, update_modified=True)
+    for field in update_fields:
+        if field in data:
+            value = parse_float(data[field]) if field in ("castration_costs", "castration_costs_in") else data[field]
+            doc.db_set(field, value, update_modified=True)
 
     return {
         "status": "success",
-        "message": f"Person demand '{doc.name}' updated successfully.",
+        "message": f"✅ Food demand '{doc.name}' updated successfully.",
         "data": doc.as_dict()
     }
 
-
 # -----------------------------
-# DELETE
+# DELETE FOOD DEMAND
 # -----------------------------
-
 @frappe.whitelist()
-def delete_person_demand(name=None):
+def delete_food_demand(name=None):
     require_login()
     if not name:
-        frappe.throw("'name' (DEM-xxxxxx) is required for deletion.")
+        frappe.throw("'name' (DEM-.######) is required for deletion.")
 
-    try:
-        doc = frappe.get_doc("Person Demands", name)
-    except frappe.DoesNotExistError:
-        frappe.throw("Person demand record not found.")
+    if not frappe.db.exists("Food Demands", name):
+        frappe.throw("Food demand record not found.")
 
-    doc.delete(ignore_permissions=True)
+    frappe.delete_doc("Food Demands", name, ignore_permissions=True)
     frappe.db.commit()
 
     return {
         "status": "success",
-        "message": f"Person demand record '{name}' deleted successfully."
+        "message": f"🗑️ Food demand '{name}' deleted successfully."
     }
 
 
+# ----------------------------- Delivery Information API -----------------------------
 
-
-# -----------------------------Deleivery Information API's  -----------------------------
-
-
+import frappe
+from frappe.utils import cint, flt
+from frappe import _
 
 # -----------------------------
 # HELPERS
 # -----------------------------
-
 def _req():
-    return frappe.local.form_dict
+    """Get request JSON data safely"""
+    return frappe.request.get_json() or {}
 
-def validate_contact_person(person_name):
-    if person_name and not frappe.db.exists("Association Contact Person info", person_name):
-        frappe.throw(f"Contact person '{person_name}' does not exist.")
+def validate_person(person_name):
+    if person_name and not frappe.db.exists("Person Details", person_name):
+        frappe.throw(f"Person '{person_name}' does not exist.")
 
+def validate_shelter(shelter_name):
+    if shelter_name and not frappe.db.exists("Animal Shelters", shelter_name):
+        frappe.throw(f"Shelter '{shelter_name}' does not exist.")
 
+def validate_organization(org_name):
+    if org_name and not frappe.db.exists("Organization Details", org_name):
+        frappe.throw(f"Organization '{org_name}' does not exist.")
 
+def update_display_title(deleivery_type, person, organization):
+    if deleivery_type == "Own Purchase" and person:
+        return f"Purchased by {person}"
+    elif deleivery_type == "Donated From Organization" and organization:
+        return f"Donated by {organization}"
+    else:
+        return ""
 
 # -----------------------------
-# CREATE
+# CREATE DELIVERY INFO
 # -----------------------------
 @frappe.whitelist()
 def create_delivery_info():
     require_login()
     data = _req()
 
-    if data.get("deleivery_type") not in ("Own Purchase", "Donated From Homie"):
-        frappe.throw("Delivery type must be either 'Own Purchase' or 'Donated From Homie'.")
+    # -----------------------------
+    # Validate dropdowns
+    # -----------------------------
+    deleivery_type = data.get("deleivery_type")
+    deleiver_to = data.get("deleiver_to")
 
-    if data.get("person_details"):
-        validate_contact_person(data.get("person_details"))
+    if deleivery_type not in ("Own Purchase", "Donated From Organization"):
+        frappe.throw("Delivery type must be either 'Own Purchase' or 'Donated From Organization'.")
+    if deleiver_to and deleiver_to not in ("Person", "Animal Shelter"):
+        frappe.throw("Deliver To must be either 'Person' or 'Animal Shelter'.")
 
-        person = frappe.get_doc("Association Contact Person info", data.get("person_details"))
-        first_name = person.first_name
-        last_name = person.last_name
+    # -----------------------------
+    # Conditional required fields
+    # -----------------------------
+    if deleivery_type == "Own Purchase" and not data.get("person_details"):
+        frappe.throw("Person Details is required for 'Own Purchase'.")
+    if deleivery_type == "Donated From Organization" and not data.get("organization_detail"):
+        frappe.throw("Organization Detail is required for 'Donated From Organization'.")
+    if deleiver_to == "Person" and not data.get("person_details"):
+        frappe.throw("Person Details is required for Deliver To Person.")
+    if deleiver_to == "Animal Shelter" and not data.get("shleter_details"):
+        frappe.throw("Shelter Details is required for Deliver To Animal Shelter.")
+
+    # -----------------------------
+    # Auto-fill linked fields
+    # -----------------------------
+    person_details = data.get("person_details")
+    shleter_details = data.get("shleter_details")
+    organization_detail = data.get("organization_detail")
+
+    # Person info
+    if person_details:
+        validate_person(person_details)
+        person_doc = frappe.get_doc("Person Details", person_details)
+        first_name = person_doc.first_name or ""
+        last_name = person_doc.last_name or ""
     else:
-        first_name = last_name = None
+        first_name = last_name = ""
 
-    doc = frappe.get_doc({
+    # Shelter info
+    if shleter_details:
+        validate_shelter(shleter_details)
+        shleter_name = frappe.db.get_value("Animal Shelters", shleter_details, "shelter_name") or shleter_details
+    else:
+        shleter_name = ""
+
+    # Organization info
+    if organization_detail:
+        validate_organization(organization_detail)
+        organization_name = frappe.db.get_value("Organization Details", organization_detail, "organization_name") or organization_detail
+    else:
+        organization_name = ""
+
+    # -----------------------------
+    # Insert record
+    # -----------------------------
+    docdata = {
         "doctype": "Deleivery Informations",
-        "order_date": data.get("order_date"),
-        "no_of_pallets": frappe.utils.cint(data.get("no_of_pallets")) if data.get("no_of_pallets") else None,
-        "deleivery_type": data.get("deleivery_type"),
-        "no_of_kilogram": float(data.get("no_of_kilogram")) if data.get("no_of_kilogram") else None,
+        "deleivery_type": deleivery_type,
+        "deleiver_to": deleiver_to,
+        "person_details": person_details,
+        "first_name": first_name,
+        "last_name": last_name,
+        "shleter_details": shleter_details,
+        "shleter_name": shleter_name,
+        "organization_detail": organization_detail,
+        "organization_name": organization_name,
+        "no_of_pallets": cint(data.get("no_of_pallets")) if data.get("no_of_pallets") else 0,
+        "no_of_kilogram": flt(data.get("no_of_kilogram")) if data.get("no_of_kilogram") else 0.0,
         "deleivery_date": data.get("deleivery_date"),
         "arrival_proof": data.get("arrival_proof"),
         "deleivery_note": data.get("deleivery_note"),
-        "person_details": data.get("person_details"),
-        "first_name": first_name,
-        "last_name": last_name,
-    })
+        "display_title": update_display_title(deleivery_type, person_details or shleter_details, organization_detail)
+    }
 
+    doc = frappe.get_doc(docdata)
     doc.insert(ignore_permissions=True)
     frappe.db.commit()
 
     return {
         "status": "success",
-        "message": f"🚚 Delivery record '{doc.name}' has been created successfully.",
+        "message": f"🚚 Delivery record '{doc.name}' created successfully for '{doc.display_title}'.",
         "record": doc.as_dict()
     }
-
 
 # -----------------------------
 # READ SINGLE RECORD
 # -----------------------------
-
 @frappe.whitelist()
 def get_delivery_info(name=None):
     require_login()
     if not name:
         frappe.throw("'name' (DEL-.######) is required.")
-
-    try:
-        doc = frappe.get_doc("Deleivery Informations", name)
-    except frappe.DoesNotExistError:
+    if not frappe.db.exists("Deleivery Informations", name):
         frappe.throw("Delivery record not found.")
 
+    doc = frappe.get_doc("Deleivery Informations", name)
     return {
         "status": "success",
-        "message": "📦 Delivery record fetched successfully.",
+        "message": f"📦 Delivery record '{doc.name}' fetched successfully.",
         "record": doc.as_dict()
     }
 
-
-
 # -----------------------------
-# READ ALL
+# READ ALL RECORDS
 # -----------------------------
-
 @frappe.whitelist()
 def get_all_delivery_info():
     require_login()
-
-    records = frappe.get_all(
-        "Deleivery Informations",
-        fields=["name"],
-        order_by="modified desc"
-    )
-
+    records = frappe.get_all("Deleivery Informations", fields=["name"], order_by="modified desc")
     result = [frappe.get_doc("Deleivery Informations", r.name).as_dict() for r in records]
 
     return {
@@ -1201,54 +1450,88 @@ def get_all_delivery_info():
         "records": result
     }
 
-
 # -----------------------------
-# UPDATE
+# UPDATE DELIVERY INFO
 # -----------------------------
-
 @frappe.whitelist()
 def update_delivery_info():
     require_login()
     data = _req()
+    name = data.get("name")
 
-    if not data.get("name"):
+    if not name:
         frappe.throw("'name' is required to update delivery information.")
-
-    try:
-        doc = frappe.get_doc("Deleivery Informations", data.get("name"))
-    except frappe.DoesNotExistError:
+    if not frappe.db.exists("Deleivery Informations", name):
         frappe.throw("Delivery record not found.")
 
-    if data.get("deleivery_type") and data.get("deleivery_type") not in (
-        "Own Purchase", "Donated From Homie"
-    ):
-        frappe.throw("Delivery type must be 'Own Purchase' or 'Donated From Homie'.")
+    doc = frappe.get_doc("Deleivery Informations", name)
 
-    if data.get("person_details"):
-        validate_contact_person(data.get("person_details"))
-        person = frappe.get_doc("Association Contact Person info", data.get("person_details"))
-        doc.first_name = person.first_name
-        doc.last_name = person.last_name
+    deleivery_type = data.get("deleivery_type") or doc.deleivery_type
+    deleiver_to = data.get("deleiver_to") or doc.deleiver_to
 
-    update_fields = [
-        "order_date",
-        "no_of_pallets",
-        "deleivery_type",
-        "no_of_kilogram",
-        "deleivery_date",
-        "arrival_proof",
-        "deleivery_note",
-        "person_details",
+    # -----------------------------
+    # Validate dropdowns
+    # -----------------------------
+    if deleivery_type not in ("Own Purchase", "Donated From Organization"):
+        frappe.throw("Delivery type must be either 'Own Purchase' or 'Donated From Organization'.")
+    if deleiver_to and deleiver_to not in ("Person", "Animal Shelter"):
+        frappe.throw("Deliver To must be either 'Person' or 'Animal Shelter'.")
+
+    # -----------------------------
+    # Conditional required fields
+    # -----------------------------
+    if deleivery_type == "Own Purchase" and not (data.get("person_details") or doc.person_details):
+        frappe.throw("Person Details is required for 'Own Purchase'.")
+    if deleivery_type == "Donated From Organization" and not (data.get("organization_detail") or doc.organization_detail):
+        frappe.throw("Organization Detail is required for 'Donated From Organization'.")
+    if deleiver_to == "Person" and not (data.get("person_details") or doc.person_details):
+        frappe.throw("Person Details is required for Deliver To Person.")
+    if deleiver_to == "Animal Shelter" and not (data.get("shleter_details") or doc.shleter_details):
+        frappe.throw("Shelter Details is required for Deliver To Animal Shelter.")
+
+    # -----------------------------
+    # Validate links and auto-fill
+    # -----------------------------
+    person_details = data.get("person_details") or doc.person_details
+    shleter_details = data.get("shleter_details") or doc.shleter_details
+    organization_detail = data.get("organization_detail") or doc.organization_detail
+
+    if person_details:
+        validate_person(person_details)
+        person_doc = frappe.get_doc("Person Details", person_details)
+        doc.first_name = person_doc.first_name or ""
+        doc.last_name = person_doc.last_name or ""
+    else:
+        doc.first_name = ""
+        doc.last_name = ""
+
+    if shleter_details:
+        validate_shelter(shleter_details)
+        doc.shleter_name = frappe.db.get_value("Animal Shelters", shleter_details, "shelter_name") or shleter_details
+    else:
+        doc.shleter_name = ""
+
+    if organization_detail:
+        validate_organization(organization_detail)
+        doc.organization_name = frappe.db.get_value("Organization Details", organization_detail, "organization_name") or organization_detail
+    else:
+        doc.organization_name = ""
+
+    # -----------------------------
+    # Update other fields
+    # -----------------------------
+    fields_to_update = [
+        "deleivery_type", "deleiver_to", "person_details", "shleter_details",
+        "organization_detail", "no_of_pallets", "no_of_kilogram", "deleivery_date",
+        "arrival_proof", "deleivery_note"
     ]
-
-    for f in update_fields:
-        if data.get(f) is not None:
-            value = (
-                frappe.utils.cint(data.get(f)) if f == "no_of_pallets"
-                else float(data.get(f)) if f == "no_of_kilogram"
-                else data.get(f)
-            )
+    for f in fields_to_update:
+        if f in data:
+            value = cint(data[f]) if f == "no_of_pallets" else flt(data[f]) if f == "no_of_kilogram" else data[f]
             doc.db_set(f, value, update_modified=True)
+
+    # Update display title
+    doc.db_set("display_title", update_display_title(doc.deleivery_type, doc.person_details or doc.shleter_details, doc.organization_detail), update_modified=True)
 
     return {
         "status": "success",
@@ -1256,23 +1539,18 @@ def update_delivery_info():
         "record": doc.as_dict()
     }
 
-
 # -----------------------------
-# DELETE
+# DELETE DELIVERY INFO
 # -----------------------------
-
-
 @frappe.whitelist()
 def delete_delivery_info(name=None):
     require_login()
     if not name:
         frappe.throw("'name' is required for deletion.")
-
-    try:
-        doc = frappe.get_doc("Deleivery Informations", name)
-    except frappe.DoesNotExistError:
+    if not frappe.db.exists("Deleivery Informations", name):
         frappe.throw("Delivery record not found.")
 
+    doc = frappe.get_doc("Deleivery Informations", name)
     doc.delete(ignore_permissions=True)
     frappe.db.commit()
 
@@ -1283,12 +1561,7 @@ def delete_delivery_info(name=None):
 
 
 
-
-
-
-
-
-
+# -----------------------------Product API's  -----------------------------
 # -----------------------------
 # HELPERS
 # -----------------------------
@@ -1304,10 +1577,6 @@ def parse_price(value):
         return float(value)
     except:
         frappe.throw("Invalid price value.")
-
-
-
-
 
 
 # -----------------------------
@@ -1515,19 +1784,46 @@ def delete_product(name=None, product_name=None):
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
-from frappe.model.document import Document
+from frappe.utils import now_datetime, flt
+
+# ---------------------------------------------------
+# HELPERS
+# ---------------------------------------------------
 
 def require_login():
     if frappe.session.user == "Guest":
         frappe.throw(_("Authentication required"), frappe.PermissionError)
 
 def _req():
-    return frappe.local.form_dict
+    return frappe.request.get_json() or {}
 
-# ---------------------------------------------------
-# CREATE DONATION
-# ---------------------------------------------------
+def validate_person(person):
+    if person and not frappe.db.exists("Person Details", person):
+        frappe.throw(_("Person '{}' does not exist").format(person))
+
+def validate_shelter(shelter):
+    if shelter and not frappe.db.exists("Animal Shelters", shelter):
+        frappe.throw(_("Shelter '{}' does not exist").format(shelter))
+
+def validate_organization(org):
+    if org and not frappe.db.exists("Organization Details", org):
+        frappe.throw(_("Organization '{}' does not exist").format(org))
+
+def fetch_person_fields(person):
+    doc = frappe.get_doc("Person Details", person)
+    return {
+        "person_first_name": doc.first_name or "",
+        "person_last_name": doc.last_name or "",
+        "person_email": doc.email or ""
+    }
+
+def fetch_shelter_name(shelter):
+    return frappe.db.get_value("Animal Shelters", shelter, "shelter_name") or shelter
+
+def fetch_organization_name(org):
+    return frappe.db.get_value("Organization Details", org, "organization_name") or org
+
+
 # ---------------------------------------------------
 # CREATE DONATION
 # ---------------------------------------------------
@@ -1536,32 +1832,35 @@ def create_donation():
     require_login()
     data = _req()
 
-    items_dict = data.get("items")
-    if not items_dict:
+    # -----------------------------
+    # Required & dropdown validation
+    # -----------------------------
+    donated_to = data.get("donated_to")
+    if donated_to not in ("Person", "Animal Shelter"):
+        frappe.throw(_("donated_to must be 'Person' or 'Animal Shelter'"))
+
+    items = data.get("items")
+    if not items:
         frappe.throw(_("Donation items are required"))
 
-    # -----------------------------
-    # Validate organization and contact person
-    # -----------------------------
-    organization = data.get("organization")
     contact_person = data.get("contact_person")
+    shelter_details = data.get("shelter_details")
 
-    if organization and not frappe.db.exists("Organization Details", organization):
-        frappe.throw(_("Organization '{}' does not exist").format(organization))
+    if donated_to == "Person" and not contact_person:
+        frappe.throw(_("contact_person is required when donated_to is Person"))
 
-    if contact_person and not frappe.db.exists("Association Contact Person info", contact_person):
-        frappe.throw(_("Contact person '{}' does not exist").format(contact_person))
-
-    # -----------------------------
-    # Validate products
-    # -----------------------------
-    for key, row in items_dict.items():
-        product_id = row.get("product_id") or key
-        if not frappe.db.exists("Product Details", product_id):
-            frappe.throw(_("Product '{}' does not exist").format(product_id))
+    if donated_to == "Animal Shelter" and not shelter_details:
+        frappe.throw(_("shelter_details is required when donated_to is Animal Shelter"))
 
     # -----------------------------
-    # Create Donation Doc
+    # Validate links
+    # -----------------------------
+    validate_person(contact_person)
+    validate_shelter(shelter_details)
+    validate_organization(data.get("organization"))
+
+    # -----------------------------
+    # Create parent document
     # -----------------------------
     doc = frappe.new_doc("Donation")
     doc.donation_number = data.get("donation_number")
@@ -1578,41 +1877,60 @@ def create_donation():
     doc.wishlist = data.get("wishlist")
     doc.local_wishlist = data.get("local_wishlist")
     doc.local_wishlist_title = data.get("local_wishlist_title")
-    doc.bacs_paid = data.get("bacs_paid", 0)
+    doc.bacs_paid = flt(data.get("bacs_paid", 0))
     doc.should_reprocessing = int(data.get("should_reprocessing", 0))
     doc.reprocessing_number = data.get("reprocessing_number")
-    doc.organization = organization
-    doc.contact_person = contact_person
+    doc.organization = data.get("organization")
+    doc.donated_to = donated_to
 
     # -----------------------------
-    # Populate read-only fields
+    # Auto-fill donor fields
     # -----------------------------
-    if organization:
-        doc.organization_name = frappe.get_value("Organization Details", organization, "organization_name")
-    if contact_person:
-        contact = frappe.get_doc("Association Contact Person info", contact_person)
-        doc.person_first_name = contact.first_name
-        doc.person_last_name = contact.last_name
-        doc.person_email = contact.email
+    if donated_to == "Person":
+        doc.contact_person = contact_person
+        person = fetch_person_fields(contact_person)
+        doc.person_first_name = person["person_first_name"]
+        doc.person_last_name = person["person_last_name"]
+        doc.person_email = person["person_email"]
+        doc.shelter_details = None
+        doc.shelter_name = ""
+    else:
+        doc.shelter_details = shelter_details
+        doc.shelter_name = fetch_shelter_name(shelter_details)
+        doc.contact_person = None
+        doc.person_first_name = ""
+        doc.person_last_name = ""
+        doc.person_email = ""
+
+    if doc.organization:
+        doc.organization_name = fetch_organization_name(doc.organization)
 
     # -----------------------------
-    # Child Items
+    # Child items + price calculation
     # -----------------------------
     total = 0
-    for key, row in items_dict.items():
-        product_id = row.get("product_id") or key
-        product_price = frappe.get_value("Product Details", product_id, "product_price") or 0
-        product_name = frappe.get_value("Product Details", product_id, "product_name") or ""
+    for row in items:
+        product = row.get("product")
         qty = int(row.get("quantity", 0))
-        line_total = qty * product_price
+
+        if not product or not frappe.db.exists("Product Details", product):
+            frappe.throw(_("Invalid product in items"))
+
+        if qty <= 0:
+            frappe.throw(_("Quantity must be greater than 0"))
+
+        product_doc = frappe.get_doc("Product Details", product)
+        amount = flt(product_doc.product_price)
+        line_total = qty * amount
 
         doc.append("items", {
-            "product": product_id,
-            "product_id": product_id,
-            "product_name": product_name,
+            "product": product,
+            "product_id": product,
+            "product_name": product_doc.product_name,
             "quantity": qty,
-            "amount": product_price,
-            "total": line_total
+            "amount": amount,
+            "total": line_total,
+            "wishlist_item": row.get("wishlist_item")
         })
 
         total += line_total
@@ -1621,10 +1939,12 @@ def create_donation():
     doc.insert(ignore_permissions=True)
 
     return {
-        "message": "Donation created successfully",
-        "name": doc.name,
-        "total": doc.total
+        "status": "success",
+        "message": f"🎉 Donation '{doc.name}' created successfully!",
+        "donation": doc.as_dict()
     }
+
+
 # ---------------------------------------------------
 # GET SINGLE DONATION
 # ---------------------------------------------------
@@ -1632,34 +1952,16 @@ def create_donation():
 def get_donation(name):
     require_login()
 
+    if not frappe.db.exists("Donation", name):
+        frappe.throw(_("Donation '{}' not found").format(name))
+
     doc = frappe.get_doc("Donation", name)
-
-    # Convert child table to dict keyed by product_id
-    items_dict = {row.product_id: {
-        "wishlist_item": getattr(row, "wishlist_item", None),
-        "product_id": row.product_id,
-        "quantity": row.quantity,
-        "total": row.total
-    } for row in doc.items}
-
     return {
-        "name": doc.name,
-        "donation_number": doc.donation_number,
-        "local_number": doc.local_number,
-        "is_anonymous": doc.is_anonymous,
-        "is_subscription": doc.is_subscription,
-        "donated_at": doc.donated_at,
-        "currency": doc.currency,
-        "source": doc.source,
-        "organization": doc.organization,
-        "organization_name": doc.organization_name,
-        "contact_person": doc.contact_person,
-        "person_first_name": doc.person_first_name,
-        "person_last_name": doc.person_last_name,
-        "person_email": doc.person_email,
-        "total": doc.total,
-        "items": items_dict
+        "status": "success",
+        "message": f"📦 Donation '{name}' fetched successfully.",
+        "donation": doc.as_dict()
     }
+
 
 # ---------------------------------------------------
 # LIST DONATIONS
@@ -1668,17 +1970,18 @@ def get_donation(name):
 def list_donations():
     require_login()
 
-    return frappe.get_all(
+    data = frappe.get_all(
         "Donation",
-        fields=[
-            "name",
-            "donation_number",
-            "organization",
-            "total",
-            "donated_at"
-        ],
+        fields=["name", "donated_to", "organization_name", "total", "donated_at"],
         order_by="creation desc"
     )
+
+    return {
+        "status": "success",
+        "count": len(data),
+        "message": "📋 Donations list retrieved successfully.",
+        "data": data
+    }
 
 
 # ---------------------------------------------------
@@ -1689,76 +1992,76 @@ def update_donation():
     require_login()
     data = _req()
 
-    donation_name = data.get("name")
-    if not donation_name:
-        frappe.throw(_("Donation name is required"))
+    name = data.get("name")
+    if not name or not frappe.db.exists("Donation", name):
+        frappe.throw(_("Donation not found"))
 
-    doc = frappe.get_doc("Donation", donation_name)
+    doc = frappe.get_doc("Donation", name)
 
-    # -----------------------------
-    # Validate organization and contact person
-    # -----------------------------
-    organization = data.get("organization")
-    contact_person = data.get("contact_person")
+    donated_to = data.get("donated_to", doc.donated_to)
+    if donated_to not in ("Person", "Animal Shelter"):
+        frappe.throw(_("donated_to must be 'Person' or 'Animal Shelter'"))
 
-    if organization and not frappe.db.exists("Organization Details", organization):
-        frappe.throw(_("Organization '{}' does not exist").format(organization))
+    doc.donated_to = donated_to
 
-    if contact_person and not frappe.db.exists("Association Contact Person info", contact_person):
-        frappe.throw(_("Contact person '{}' does not exist").format(contact_person))
+    # Auto-fill logic
+    if donated_to == "Person":
+        contact_person = data.get("contact_person")
+        if not contact_person:
+            frappe.throw(_("contact_person is required"))
+        validate_person(contact_person)
+        person = fetch_person_fields(contact_person)
+        doc.contact_person = contact_person
+        doc.person_first_name = person["person_first_name"]
+        doc.person_last_name = person["person_last_name"]
+        doc.person_email = person["person_email"]
+        doc.shelter_details = None
+        doc.shelter_name = ""
+    else:
+        shelter_details = data.get("shelter_details")
+        if not shelter_details:
+            frappe.throw(_("shelter_details is required"))
+        validate_shelter(shelter_details)
+        doc.shelter_details = shelter_details
+        doc.shelter_name = fetch_shelter_name(shelter_details)
+        doc.contact_person = None
+        doc.person_first_name = ""
+        doc.person_last_name = ""
+        doc.person_email = ""
 
-    # -----------------------------
-    # Update parent fields
-    # -----------------------------
-    doc.is_anonymous = int(data.get("is_anonymous", doc.is_anonymous))
-    doc.is_subscription = int(data.get("is_subscription", doc.is_subscription))
-    doc.organization = organization or doc.organization
-    doc.contact_person = contact_person or doc.contact_person
-
-    # Update read-only fields from links
-    if doc.organization:
-        doc.organization_name = frappe.get_value("Organization Details", doc.organization, "organization_name")
-    if doc.contact_person:
-        contact = frappe.get_doc("Association Contact Person info", doc.contact_person)
-        doc.person_first_name = contact.first_name
-        doc.person_last_name = contact.last_name
-        doc.person_email = contact.email
-
-    # -----------------------------
     # Update items if provided
-    # -----------------------------
-    items_dict = data.get("items")
-    if items_dict:
-        total = 0
+    if data.get("items"):
         doc.items = []
-        for key, row in items_dict.items():
-            product_id = row.get("product_id") or key
-            if not product_id or not frappe.db.exists("Product Details", product_id):
-                frappe.throw(_("Product '{}' does not exist").format(product_id))
-
-            product_price = frappe.get_value("Product Details", product_id, "product_price") or 0
-            product_name = frappe.get_value("Product Details", product_id, "product_name") or ""
+        total = 0
+        for row in data["items"]:
+            product = row.get("product")
             qty = int(row.get("quantity", 0))
-            line_total = qty * product_price
+
+            product_doc = frappe.get_doc("Product Details", product)
+            amount = flt(product_doc.product_price)
+            line_total = qty * amount
 
             doc.append("items", {
-                "product": product_id,
-                "product_id": product_id,
-                "product_name": product_name,
+                "product": product,
+                "product_id": product,
+                "product_name": product_doc.product_name,
                 "quantity": qty,
-                "amount": product_price,
-                "total": line_total
+                "amount": amount,
+                "total": line_total,
+                "wishlist_item": row.get("wishlist_item")
             })
             total += line_total
+
         doc.total = total
 
     doc.save(ignore_permissions=True)
 
     return {
-        "message": "Donation updated successfully",
-        "name": doc.name,
-        "total": doc.total
+        "status": "success",
+        "message": f"✅ Donation '{doc.name}' updated successfully!",
+        "donation": doc.as_dict()
     }
+
 
 # ---------------------------------------------------
 # DELETE DONATION
@@ -1768,45 +2071,48 @@ def delete_donation(name):
     require_login()
 
     if not frappe.db.exists("Donation", name):
-        frappe.throw(_("Donation '{}' does not exist").format(name))
+        frappe.throw(_("Donation '{}' not found").format(name))
 
     frappe.delete_doc("Donation", name, ignore_permissions=True)
-    return {"message": "Donation deleted successfully"}
 
-
-
-# homie_app/api.py
-import frappe
-from frappe import _
-
-def get_organization_stats():
-    """
-    Return chart-friendly data for Organization status breakdown and counts.
-
-    Format returned must be:
-    {
-      "labels": ["Active", "Inactive"],
-      "datasets": [
-         {"name": "Organizations", "values": [active_count, inactive_count]}
-      ]
-    }
-    """
-    # counts
-    active = frappe.db.count("Organizations", {"status": "Active"})
-    inactive = frappe.db.count("Organizations", {"status": "Inactive"})
-    total = active + inactive
-
-    # The structure expected by ERPNext chart Data Source = API:
     return {
-        "labels": ["Active", "Inactive"],
-        "datasets": [
-            {"name": "Organizations", "values": [active, inactive]}
-        ],
-        # optional: you can return extra fields for a custom card if needed
-        "meta": {
-            "total": total
-        }
+        "status": "success",
+        "message": f"🗑️ Donation '{name}' deleted successfully."
     }
+
+
+# # homie_app/api.py
+# import frappe
+# from frappe import _
+
+# def get_organization_stats():
+#     """
+#     Return chart-friendly data for Organization status breakdown and counts.
+
+#     Format returned must be:
+#     {
+#       "labels": ["Active", "Inactive"],
+#       "datasets": [
+#          {"name": "Organizations", "values": [active_count, inactive_count]}
+#       ]
+#     }
+#     """
+#     # counts
+#     active = frappe.db.count("Organizations", {"status": "Active"})
+#     inactive = frappe.db.count("Organizations", {"status": "Inactive"})
+#     total = active + inactive
+
+#     # The structure expected by ERPNext chart Data Source = API:
+#     return {
+#         "labels": ["Active", "Inactive"],
+#         "datasets": [
+#             {"name": "Organizations", "values": [active, inactive]}
+#         ],
+#         # optional: you can return extra fields for a custom card if needed
+#         "meta": {
+#             "total": total
+#         }
+#     }
 
 
 

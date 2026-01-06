@@ -83,7 +83,7 @@ def get_organization_dashboard(organization):
             "last_name",
             "shleter_details",
             "shleter_name",
-            "order_date",
+            # "order_date",
             "deleivery_date"
         ],
         order_by="deleivery_date desc"

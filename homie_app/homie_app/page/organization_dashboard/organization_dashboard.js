@@ -304,7 +304,6 @@ if (data.deliveries?.length) {
                     <th>Organization</th>
                     <th>Recipient</th>
                     <th>Delivery Type</th>
-                    <th>Order Date</th>
                     <th>Delivery Date</th>
                 </tr>
             </thead>
@@ -323,7 +322,6 @@ if (data.deliveries?.length) {
                             <td>${d.organization_name || d.organization_detail || ""}</td>
                             <td>${recipient}</td>
                             <td>${d.deleivery_type || ""}</td>
-                            <td>${d.order_date || ""}</td>
                             <td>${d.deleivery_date || ""}</td>
                         </tr>
                     `;
