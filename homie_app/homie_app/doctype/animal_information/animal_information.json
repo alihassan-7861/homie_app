@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "AND-.#####",
  "creation": "2025-11-20 17:37:46.044514",
  "default_view": "List",
@@ -99,7 +100,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-19 19:26:32.322028",
+ "modified": "2026-01-06 20:05:58.303457",
  "modified_by": "Administrator",
  "module": "Homie App",
  "name": "Animal Information",
