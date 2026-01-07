@@ -1,3 +1,4 @@
 homie_app.patches.hide_other_modules
 homie_app.patches.add_organization_dashboard_page
+homie_app.patches.fix_delivery_name_column
 homie_app.patches.fix_delivery_naming
