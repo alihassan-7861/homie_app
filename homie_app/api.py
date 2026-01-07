@@ -524,17 +524,17 @@ def update_animal():
         doc.db_set("adult_dogs", parse_int(data.get("adult_dogs")))
         doc.db_set("puppies", parse_int(data.get("puppies")))
         doc.db_set("senior_sick_dogs", parse_int(data.get("senior_sick_dogs")))
-        doc.db_set("adult_cats", None)
-        doc.db_set("kittens", None)
-        doc.db_set("senior_sick_cats", None)
+        # doc.db_set("adult_cats", None)
+        # doc.db_set("kittens", None)
+        # doc.db_set("senior_sick_cats", None)
 
     else:
         doc.db_set("adult_cats", parse_int(data.get("adult_cats")))
         doc.db_set("kittens", parse_int(data.get("kittens")))
         doc.db_set("senior_sick_cats", parse_int(data.get("senior_sick_cats")))
-        doc.db_set("adult_dogs", None)
-        doc.db_set("puppies", None)
-        doc.db_set("senior_sick_dogs", None)
+        # doc.db_set("adult_dogs", None)
+        # doc.db_set("puppies", None)
+        # doc.db_set("senior_sick_dogs", None)
 
     frappe.db.commit()
 
