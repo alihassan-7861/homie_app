@@ -1,5 +1,6 @@
 homie_app.patches.hide_other_modules
 homie_app.patches.add_organization_dashboard_page
+homie_app.patches.add_workspace_dashboard_page
 homie_app.patches.fix_delivery_name_column
 homie_app.patches.fix_delivery_naming
 homie_app.patches.fix_animal_name_column

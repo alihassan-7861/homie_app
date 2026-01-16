@@ -1,0 +1,10 @@
+{
+  "doctype": "Page",
+  "name": "workspace-dashboard",
+  "page_name": "workspace-dashboard",
+  "title": "VETO Workspace",
+  "icon": "octicon octicon-database",
+  "module": "Homie App",
+  "standard": "No",
+  "system_page": 0
+}
