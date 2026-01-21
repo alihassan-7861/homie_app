@@ -16,7 +16,9 @@ def execute():
             "title": "VETO Workspace",
             "icon": "octicon octicon-database",
             "module": "Homie App",
-            "roles": ["System Manager"]  # add roles as required
+            "roles": [
+            {"role": "System Manager"}
+        ] # add roles as required
         })
         page.insert(ignore_permissions=True)
         print("Page inserted successfully.")
